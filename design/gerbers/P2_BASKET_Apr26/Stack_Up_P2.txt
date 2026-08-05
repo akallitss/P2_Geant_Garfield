@@ -1,0 +1,4 @@
+layer "F.Cu" type "copper" Thickness 0.018 mm
+layer "Dielectric 1" type "core" sublayer "1/1" Color "FR4 natural" Thickness 0.2 mm Material "FR4" EpsilonR 4.5 LossTg 0.02
+layer "B.Cu" type "copper" Thickness 0.018 mm
+Finish "None"

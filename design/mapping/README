@@ -1,0 +1,22 @@
+
+Descriptif
+----------
+
+Fichiers : connector_i.txt, i=0..9
+
+Dans chaque fichier :
+
+Connector	index connecteur		0..9		sens trigo
+		 
+Channel		index canal / connecteur	0..127		sens trigo
+
+PadIndex	index pad / connecteur		0..127		sens trigo pour connecteurs 0..4
+		       	     					sens trigo inverse pour connecteurs 5..9
+
+AbsIndex	index pad absolu		0..1279		sens trigo
+
+Radius		rayon pad
+
+Phi		azimuth pad
+
+DeltaPhi	difference en phi avec le precedent

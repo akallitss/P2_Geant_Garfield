@@ -1,0 +1,3 @@
+runID,date,HV_mesh_V,HV_drift_V,gas,threshold,angle_deg,pos_x_mm,pos_y_mm,n_triggers,good,remarks
+# TEMPLATE — one row per test-beam run; delete this comment line when filling.
+# See TB_CONDITIONS.md. good = y/n (n => masked from comparisons, say why in remarks).

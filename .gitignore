@@ -1,0 +1,26 @@
+# Build
+build/
+cmake-build-*/
+install/
+CMakeCache.txt
+CMakeFiles/
+
+# IDE
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.pyc
+
+# Simulation output
+*.root
+*_events.csv
+*.pdf
+!design/**/*.pdf
+!docs/**/*.pdf
+
+# Geant4 scratch
+*.wrl
+*.heprep
+G4*.prim

@@ -1,0 +1,6 @@
+Reference	Value	Datasheet	Footprint	Qty	DNP
+FID1,FID2,FID3,FID4,FID5,FID6	Fiducial	~	Library-P2-FEAB:MIRE_CMS-P2-FEAB	6	
+HC_1,HC_2,HC_3,HC_4,HM1_1,HM1_2,HM2_1,HM2_2	MountingHole_Pad	~	MountingHole:MountingHole_3.2mm_M3_Pad	8	
+J2	FX20-140S-0.5SH_P2	https://www.hirose.com/en/product/document?clcode=CL0570-1006-4-10&productname=FX20-140P-0.5SV15(10)&series=FX20&documenttype=2DDrawing&lang=en&documentid=0000949948	Fx20_140S:FX20140S05SV1510_P2_FEAB_FINAL	1	
+JM_1,JM_2	MEC8-135-02-X-D-RA1		Mec8:SAMTEC_MEC8-135-02-X-D-RA1	2	
+TP_1	TestPoint	~	TestPoint:TestPoint_THTPad_D1.0mm_Drill0.5mm	1	

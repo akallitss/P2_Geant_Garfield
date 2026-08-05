@@ -1,0 +1,209 @@
+{
+  "Header": {
+    "GenerationSoftware": {
+      "Vendor": "KiCad",
+      "Application": "Pcbnew",
+      "Version": "8.0.0"
+    },
+    "CreationDate": "2024-05-02T10:20:31+02:00"
+  },
+  "GeneralSpecs": {
+    "ProjectId": {
+      "Name": "Fx2Mec8",
+      "GUID": "4678324d-6563-4382-9e6b-696361645f70",
+      "Revision": "rev?"
+    },
+    "Size": {
+      "X": 50.01,
+      "Y": 126.01
+    },
+    "LayerNumber": 6,
+    "BoardThickness": 1.5,
+    "Finish": "None"
+  },
+  "DesignRules": [
+    {
+      "Layers": "Outer",
+      "PadToPad": 0.125,
+      "PadToTrack": 0.125,
+      "TrackToTrack": 0.125,
+      "MinLineWidth": 0.125,
+      "TrackToRegion": 0.125,
+      "RegionToRegion": 0.125
+    },
+    {
+      "Layers": "Inner",
+      "PadToPad": 0.125,
+      "PadToTrack": 0.125,
+      "TrackToTrack": 0.125,
+      "MinLineWidth": 0.125,
+      "TrackToRegion": 0.125,
+      "RegionToRegion": 0.125
+    }
+  ],
+  "FilesAttributes": [
+    {
+      "Path": "Fx2Mec8-Top.gbr",
+      "FileFunction": "Copper,L1,Top",
+      "FilePolarity": "Positive"
+    },
+    {
+      "Path": "Fx2Mec8-SIG_1.gbr",
+      "FileFunction": "Copper,L2,Inr",
+      "FilePolarity": "Positive"
+    },
+    {
+      "Path": "Fx2Mec8-GND_1.gbr",
+      "FileFunction": "Copper,L3,Inr",
+      "FilePolarity": "Positive"
+    },
+    {
+      "Path": "Fx2Mec8-GND_2.gbr",
+      "FileFunction": "Copper,L4,Inr",
+      "FilePolarity": "Positive"
+    },
+    {
+      "Path": "Fx2Mec8-SIG_2.gbr",
+      "FileFunction": "Copper,L5,Inr",
+      "FilePolarity": "Positive"
+    },
+    {
+      "Path": "Fx2Mec8-Bottom.gbr",
+      "FileFunction": "Copper,L6,Bot",
+      "FilePolarity": "Positive"
+    },
+    {
+      "Path": "Fx2Mec8-F_Paste.gbr",
+      "FileFunction": "SolderPaste,Top",
+      "FilePolarity": "Positive"
+    },
+    {
+      "Path": "Fx2Mec8-B_Paste.gbr",
+      "FileFunction": "SolderPaste,Bot",
+      "FilePolarity": "Positive"
+    },
+    {
+      "Path": "Fx2Mec8-F_Mask.gbr",
+      "FileFunction": "SolderMask,Top",
+      "FilePolarity": "Negative"
+    },
+    {
+      "Path": "Fx2Mec8-B_Mask.gbr",
+      "FileFunction": "SolderMask,Bot",
+      "FilePolarity": "Negative"
+    },
+    {
+      "Path": "Fx2Mec8-User_Drawings.gbr",
+      "FileFunction": "Other,User",
+      "FilePolarity": "Positive"
+    },
+    {
+      "Path": "Fx2Mec8-Edge_Cuts.gbr",
+      "FileFunction": "Profile",
+      "FilePolarity": "Positive"
+    },
+    {
+      "Path": "Fx2Mec8-F_Fab.gbr",
+      "FileFunction": "AssemblyDrawing,Top",
+      "FilePolarity": "Positive"
+    },
+    {
+      "Path": "Fx2Mec8-B_Fab.gbr",
+      "FileFunction": "AssemblyDrawing,Bot",
+      "FilePolarity": "Positive"
+    }
+  ],
+  "MaterialStackup": [
+    {
+      "Type": "Legend",
+      "Name": "Top Silk Screen"
+    },
+    {
+      "Type": "SolderPaste",
+      "Name": "Top Solder Paste"
+    },
+    {
+      "Type": "SolderMask",
+      "Thickness": 0.01,
+      "Name": "Top Solder Mask"
+    },
+    {
+      "Type": "Copper",
+      "Thickness": 0.035,
+      "Name": "Top"
+    },
+    {
+      "Type": "Dielectric",
+      "Thickness": 0.0,
+      "Material": "FR4",
+      "Name": "Top/SIG_1",
+      "Notes": "Type: dielectric layer 1 (from Top to SIG_1)"
+    },
+    {
+      "Type": "Copper",
+      "Thickness": 0.035,
+      "Name": "SIG_1"
+    },
+    {
+      "Type": "Dielectric",
+      "Thickness": 0.1,
+      "Material": "FR4",
+      "Name": "SIG_1/GND_1",
+      "Notes": "Type: dielectric layer 2 (from SIG_1 to GND_1)"
+    },
+    {
+      "Type": "Copper",
+      "Thickness": 0.035,
+      "Name": "GND_1"
+    },
+    {
+      "Type": "Dielectric",
+      "Thickness": 0.535,
+      "Material": "FR4",
+      "Name": "GND_1/GND_2",
+      "Notes": "Type: dielectric layer 3 (from GND_1 to GND_2)"
+    },
+    {
+      "Type": "Copper",
+      "Thickness": 0.035,
+      "Name": "GND_2"
+    },
+    {
+      "Type": "Dielectric",
+      "Thickness": 0.1,
+      "Material": "FR4",
+      "Name": "GND_2/SIG_2",
+      "Notes": "Type: dielectric layer 4 (from GND_2 to SIG_2)"
+    },
+    {
+      "Type": "Copper",
+      "Thickness": 0.035,
+      "Name": "SIG_2"
+    },
+    {
+      "Type": "Dielectric",
+      "Thickness": 0.535,
+      "Material": "FR4",
+      "Name": "SIG_2/Bottom",
+      "Notes": "Type: dielectric layer 5 (from SIG_2 to Bottom)"
+    },
+    {
+      "Type": "Copper",
+      "Thickness": 0.035,
+      "Name": "Bottom"
+    },
+    {
+      "Type": "SolderMask",
+      "Thickness": 0.01,
+      "Name": "Bottom Solder Mask"
+    },
+    {
+      "Type": "SolderPaste",
+      "Name": "Bottom Solder Paste"
+    },
+    {
+      "Type": "Legend",
+      "Name": "Bottom Silk Screen"
+    }
+  ]
+}
