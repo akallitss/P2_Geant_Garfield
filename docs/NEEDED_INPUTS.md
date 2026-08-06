@@ -57,7 +57,13 @@ currently "deferred to a small dedicated scan" (plan §4.1).
      — does not survive at 30–40°, where a 3 mm gap smears the track over
      ~1.7–2.5 mm transversely. If the outer radius sits at 30°+, topology
      comes back as a real discriminant *there* and the ROC is
-     radius-dependent.
+     radius-dependent. **The ~1.1-pad number now carries more weight than
+     when it was written** (2026-08-06): it is also the basis for running
+     with VMM neighbor logic off and for treating clustering as a minority
+     effect (plan §2, `vmm/README.md` §3.1). If the real angular
+     distribution puts a significant fraction of tracks at 30°+, both of
+     those conclusions become radius-dependent too — another reason the
+     phase-space file below is the highest-value ask.
    - Also worth checking: with a point target at fixed L, a 30°–40°
      acceptance maps to a **narrow annulus**, not the full r = 120–590 mm
      span (at L = 500 mm, 30°–40° → r = 289–419 mm). The full active area
@@ -175,3 +181,18 @@ closes the two largest open axes at once, converts the campaign from
 "scan everything and hope" to "weight by the real distribution", and it
 almost certainly already exists inside the collaboration's acceptance
 simulation.
+
+---
+
+## Addendum (2026-08-06, from the MX17 model work): bulk pillars not modelled
+
+The P2 wedge model has **no bulk pillars** — the amplification gap is pure
+gas. MX17's bulk gerber (`3498A_bulk.gbr`) shows the real pattern for that
+detector: Ø 0.6 mm pillars on a regular 4.68 mm grid, i.e. ~1.3 % of the amp
+gap is polyimide, not gas, with locally dead amplification spots. The MX17
+model now places them (`MX17_Geant/shared/MX17ModuleGeometry.hh`); if the P2
+production uses a similar bulk process, the same pattern likely applies.
+
+**Ask for:** the P2 bulk pillar mask (diameter + pitch), or confirm the
+MX17-like 0.6 mm / 4.68 mm pattern, then add pillars as daughters of the
+`AmpGas` volume as MX17 does.
