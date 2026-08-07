@@ -48,11 +48,48 @@ digitizer downstream). This is what large experiments do:
 
 **Recommendation for the P2 campaign: (b).** Geant4 pass runs once per
 beam/background config; cheap digitization re-runs per (field, gain,
-threshold, gas) point from the same files. Garfield++ available on
-lxplus/Condor via cvmfs LCG views (`/cvmfs/sft.cern.ch/lcg/views/...` then
-`share/Garfield/setupGarfield.sh`; [install docs](https://garfieldpp.web.cern.ch/install/)).
-Use (a) selectively for one-off validation (e.g. x-ray response with in-gas
-Geant4→Heed handoff).
+threshold, gas) point from the same files. Use (a) selectively for one-off
+validation (e.g. x-ray response with in-gas Geant4→Heed handoff).
+
+> ### ⚠ Do NOT use the CVMFS Garfield — build our own
+>
+> *(Correction 2026-08-07. This section previously said "Garfield++ available
+> on lxplus/Condor via cvmfs LCG views (`/cvmfs/sft.cern.ch/lcg/views/...`
+> then `share/Garfield/setupGarfield.sh`)". That is the trap, not the
+> recipe.)*
+>
+> Per MX17's toolchain work
+> (`MX17_Geant/design/RESPONSE_SIM_PLAN.md` §5a), **LCG_108 ships Garfield
+> `6fb94b35` (2025-07-07, 664 commits behind) and LCG_109 ships `78fe1bd3`
+> (2026-02-02, 281 behind).** The APIs still exist, so nothing looks broken —
+> which is exactly why this bites silently. Everything aimed at *this class of
+> problem* landed between March and August 2026:
+>
+> - the `Examples/ResistiveMicromegas` example;
+> - `AvalancheMicroscopic::GetIons()` — the ion component we need for the
+>   P0.17 induced-current work;
+> - the **neBEM OpenMP race in the SVD inversion**, i.e. silently wrong field
+>   solves on a multi-core box;
+> - **interface-crossing checks — electrons no longer tunnel through mesh
+>   wires.** That *is* the mesh-transparency observable (P0.13, and the
+>   Phase-4 transparency item). On an old build the transparency number is
+>   wrong and looks fine;
+> - the FFT-convolution fix and arbitrary-PSD noise generators;
+> - the regression test suite itself.
+>
+> **Magboltz needs no upgrade and existing gas tables stay valid** — it is
+> vendored inside Garfield at 11.19 (Jan 2024) and between LCG_108 and the
+> pin `magboltz.f` changes only by a fixed-form continuation marker and one
+> missing comma in a `FORMAT` *print* statement. No cross-section or
+> transport change, and the built-in Penning table is unchanged. So P0.10 is
+> safe on either build; it is the **field-solve and induction work that is
+> not**.
+>
+> MX17 keeps a single entry point that resolves the right paths on every host
+> (including unpacking a tarball on a condor worker):
+> `nTof_x17/garfield_sim/setup_garfield.sh`. Reuse it rather than pasting a
+> path — and if the pin moves, re-run their `probe_penning.py` and reconcile
+> against the Penning rates we chose.
 
 ## 2. Primary ionization fidelity in 1-4 mm gas
 

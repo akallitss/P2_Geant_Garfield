@@ -4,6 +4,10 @@ Geant4 simulation of the P2 wedge Micromegas detector (MESA / Mainz).
 
 > **Read [`docs/HANDOFF.md`](docs/HANDOFF.md) first.**
 >
+> **Running it on lxplus: [`docs/RUNBOOK.md`](docs/RUNBOOK.md)** — including
+> what is *not* yet runnable (Stage B does not exist, there is no pillar
+> code, and HTCondor submission does not speak `p2` mode).
+>
 > **Update 2026-08-06: VMM analysis re-scoped for a *pad* detector, and a
 > first time-resolution prediction exists.** The charge cloud fires **~1.1
 > pads on average**, so inter-pad clustering is a ~10 % minority effect;

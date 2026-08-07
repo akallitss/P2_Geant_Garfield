@@ -101,6 +101,30 @@ PrimaryGeneratorAction::PrimaryGeneratorAction(const SimConfig& cfg,
         const G4ThreeVector pos = aim - standoff * dir;
         gunX = pos.x(); gunY = pos.y(); gunZ = pos.z();
         fGun->SetParticleMomentumDirection(dir);
+
+        fP2Mode = true; fP2Aim = aim; fP2Dir = dir; fP2Standoff = standoff;
+
+        if (cfg.p2_beam_spread_mm <= 0.0) {
+            // Warn if the fixed aim point lands on a pad boundary. A pencil
+            // beam parked on a boundary makes "which pad has the most
+            // charge" a coin flip and inflates pad multiplicity, and it does
+            // so invisibly -- MX17 lost a first result to exactly this
+            // (RESPONSE_SIM_PLAN §7). P2's own historical default, r=355 mm,
+            // sat 35 um from a ring boundary.
+            const double r = std::hypot(cfg.p2_gun_x_mm, cfg.p2_gun_y_mm);
+            const double ringPitch = 11.4290;                 // mm, measured
+            const double rInner    = 120.714;                 // first ring centre
+            const double frac = std::fabs(std::fmod(r - rInner + 0.5*ringPitch,
+                                                    ringPitch) / ringPitch - 0.5);
+            if (frac > 0.35)
+                G4cout << "PrimaryGeneratorAction: WARNING - the aim point "
+                       << "r = " << r << " mm sits " << 100.0*frac
+                       << "% of a ring pitch from the nearest pad centre, "
+                       << "i.e. near a RADIAL PAD BOUNDARY. Pad multiplicity "
+                       << "and any positional observable will be biased. "
+                       << "Use --beam-spread (>= one ring pitch, 11.43 mm) "
+                       << "for those observables." << G4endl;
+        }
     }
 
     fGun->SetParticlePosition(G4ThreeVector(gunX, gunY, gunZ));
@@ -165,6 +189,21 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* event) {
     if (fUseSpectrum) {
         double E = SampleSpectrum();
         fGun->SetParticleEnergy(E * MeV);
+    }
+
+    // --beam-spread: scatter the impact point over a disc in the wedge plane
+    // so pad-level observables average over the pad cell instead of being
+    // read off one fixed point. Sampled per event, in the plane transverse
+    // to the beam so it stays a disc at any --gun-theta.
+    if (fP2Mode && fConfig.p2_beam_spread_mm > 0.0) {
+        const G4double R = fConfig.p2_beam_spread_mm * mm;
+        const G4double rho = R * std::sqrt(G4UniformRand());   // uniform in area
+        const G4double psi = CLHEP::twopi * G4UniformRand();
+        // Orthonormal basis transverse to the beam.
+        G4ThreeVector u = fP2Dir.orthogonal().unit();
+        G4ThreeVector v = fP2Dir.cross(u).unit();
+        const G4ThreeVector aim = fP2Aim + rho*(std::cos(psi)*u + std::sin(psi)*v);
+        fGun->SetParticlePosition(aim - fP2Standoff * fP2Dir);
     }
     fGun->GeneratePrimaryVertex(event);
 }

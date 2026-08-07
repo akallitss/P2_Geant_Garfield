@@ -49,8 +49,13 @@ void PrintUsage() {
     std::cerr << "                      1 normally, up to 3 this production  (default: 1)\n";
     std::cerr << "  --bulge-front <mm>  Front window overpressure sag  (default: 10)\n";
     std::cerr << "  --bulge-back <mm>   Back window overpressure sag  (default: 5)\n";
-    std::cerr << "  --gun-x <mm>        Beam aim x [gerber coords]  (default: 307.4)\n";
-    std::cerr << "  --gun-y <mm>        Beam aim y [gerber coords]  (default: 177.5)\n";
+    std::cerr << "  --gun-x <mm>        Beam aim x [gerber coords]  (default: 302.49)\n";
+    std::cerr << "  --gun-y <mm>        Beam aim y [gerber coords]  (default: 174.64)\n";
+    std::cerr << "                      Default is a pad-RING CENTRE (r=349.286, phi=30);\n";
+    std::cerr << "                      a boundary aim point biases pad multiplicity\n";
+    std::cerr << "  --beam-spread <mm>  Scatter the impact point over a disc of this radius\n";
+    std::cerr << "                      (0 = pencil beam). REQUIRED for pad-multiplicity or\n";
+    std::cerr << "                      positional observables; use >= 11.43 (one ring pitch)\n";
     std::cerr << "  --gun-theta <deg>   Beam tilt from the wedge normal  (default: 0)\n";
     std::cerr << "  --gun-phi <deg>     Azimuth of the tilt, 0 = toward +x  (default: 0)\n";
     std::cerr << "                      The beam pivots about (gun-x, gun-y) at the drift\n";
@@ -122,6 +127,7 @@ int main(int argc, char** argv) {
         else if (arg == "--gun-theta"   && i+1<argc) config.p2_gun_theta_deg  = std::stod(argv[++i]);
         else if (arg == "--gun-phi"     && i+1<argc) config.p2_gun_phi_deg    = std::stod(argv[++i]);
         else if (arg == "--gun-standoff"&& i+1<argc) config.p2_gun_standoff_mm= std::stod(argv[++i]);
+        else if (arg == "--beam-spread" && i+1<argc) config.p2_beam_spread_mm = std::stod(argv[++i]);
         else if (arg == "--w-cf4"       && i+1<argc) config.w_cf4_eV          = std::stod(argv[++i]);
         else if (arg == "--list-gases") { std::cout << gas::ListMixtures(); return 0; }
         else if (arg[0] != '-') macroFile = arg;
@@ -183,6 +189,10 @@ int main(int argc, char** argv) {
                   << config.p2_gun_y_mm << ") mm\n";
         std::cout << "  Gun angle      : theta " << config.p2_gun_theta_deg
                   << " deg, phi " << config.p2_gun_phi_deg << " deg\n";
+        std::cout << "  Beam spread    : " << config.p2_beam_spread_mm
+                  << " mm" << (config.p2_beam_spread_mm <= 0.0
+                               ? "  [pencil beam - not valid for pad-level observables]"
+                               : "") << "\n";
     } else if (config.mode == SimMode::kVacuum)
         std::cout << "  Al shielding   : " << config.alThickness_mm << " mm\n";
     else

@@ -50,6 +50,15 @@ std::string GeometryDigest(const SimConfig& cfg) {
        << ";fCu="      << cfg.p2_fcu_coverage
        << ";bCu="      << cfg.p2_bcu_coverage;
 
+    // Beam configuration is not geometry, but a pencil-beam run and a
+    // beam-spread run are not interchangeable for any pad-level observable,
+    // so they must not share a hash.
+    os << ";gunX="   << cfg.p2_gun_x_mm
+       << ";gunY="   << cfg.p2_gun_y_mm
+       << ";theta="  << cfg.p2_gun_theta_deg
+       << ";phi="    << cfg.p2_gun_phi_deg
+       << ";spread=" << cfg.p2_beam_spread_mm;
+
     // Non-P2 modes.
     os << ";al="   << cfg.alThickness_mm
        << ";cfrp=" << cfg.cfrpThickness_mm;

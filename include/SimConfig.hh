@@ -67,8 +67,23 @@ struct SimConfig {
                                        //   plane; radial 0.03->0.26). Layers modelled as
                                        //   full-thickness slabs of density-scaled copper.
                                        //   scripts/gerber/analyze_cu_coverage.py
-    double p2_gun_x_mm       = 307.4;  // gun aim point: r=355 mm, phi=30 deg
-    double p2_gun_y_mm       = 177.5;  //   (mid-active-area; apex/beam axis is x=y=0)
+    // Gun aim point, mid-active-area, apex/beam axis is x=y=0.
+    // Moved 2026-08-07 from (307.4, 177.5) = r 354.97 mm, which was chosen as
+    // a round "r = 355, phi = 30" but landed **35 um from a radial pad
+    // boundary** (ring centres are at 120.714 + n*11.4290 mm, so 349.286 and
+    // 360.715 straddle it). A pencil beam parked on a pad boundary makes
+    // "which pad has the most charge" a coin flip and inflates pad
+    // multiplicity -- MX17 lost a first result to precisely this
+    // (MX17_Geant/design/RESPONSE_SIM_PLAN.md §7). Now r = 349.286 mm at
+    // phi = 30 deg, i.e. a ring CENTRE. For any pad-multiplicity or
+    // positional observable use --beam-spread as well; a fixed point, even a
+    // well-chosen one, is not representative.
+    double p2_gun_x_mm       = 302.49; // r = 349.286 mm (ring centre), phi = 30 deg
+    double p2_gun_y_mm       = 174.64;
+    // Radius [mm] of a uniform disc, transverse to the beam, over which the
+    // impact point is scattered per event. 0 = pencil beam. Use >= one ring
+    // pitch (11.43 mm) to average over the pad cell.
+    double p2_beam_spread_mm = 0.0;
     // Beam tilt (P0.3). theta is measured from the wedge normal (+z), phi is
     // the azimuth of the tilt in the wedge plane: phi=0 tilts toward +x, 90
     // toward +y. The beam always passes through the aim point (gun-x, gun-y)
