@@ -4,6 +4,7 @@
 #include "RunAction.hh"
 #include "GasMixtures.hh"
 #include "RunMeta.hh"
+#include "DetectorConstruction.hh"
 #include "G4Run.hh"
 #include "G4SystemOfUnits.hh"
 #include "G4Threading.hh"
@@ -38,6 +39,7 @@ struct RunAction::Impl {
     Double_t br_edepFrontGas, br_edepCathGas, br_edepBackGas, br_edepWindowGas;
     Double_t br_edepCathMylar, br_edepCathAl, br_edepWindowMylar;
     Double_t br_edepMeshP2, br_edepPadCu, br_edepFR4P2, br_edepCuB, br_edepFrame;
+    Double_t br_edepPadGapGas;
 
     // VolumeTree — one row per (event, volume) with non-zero edep
     Int_t    vb_eventID, vb_nSteps;
@@ -87,8 +89,9 @@ struct RunAction::Impl {
 #endif
 };
 
-RunAction::RunAction(const SimConfig& cfg, bool isMaster)
-    : G4UserRunAction(), fConfig(cfg), fIsMaster(isMaster),
+RunAction::RunAction(const SimConfig& cfg, bool isMaster,
+                     const DetectorConstruction* detCon)
+    : G4UserRunAction(), fConfig(cfg), fIsMaster(isMaster), fDetCon(detCon),
       fImpl(std::make_unique<Impl>()) {}
 
 RunAction::~RunAction() = default;
@@ -182,6 +185,7 @@ void RunAction::BeginOfRunAction(const G4Run*) {
     fImpl->evtTree->Branch("edepWindowMylar", &fImpl->br_edepWindowMylar);
     fImpl->evtTree->Branch("edepMesh",        &fImpl->br_edepMeshP2);
     fImpl->evtTree->Branch("edepPadCu",       &fImpl->br_edepPadCu);
+    fImpl->evtTree->Branch("edepPadGapGas",  &fImpl->br_edepPadGapGas);
     fImpl->evtTree->Branch("edepFR4",         &fImpl->br_edepFR4P2);
     fImpl->evtTree->Branch("edepCuB",         &fImpl->br_edepCuB);
     fImpl->evtTree->Branch("edepFrame",       &fImpl->br_edepFrame);
@@ -278,7 +282,7 @@ void RunAction::BeginOfRunAction(const G4Run*) {
                       ",edepFrontGas_eV,edepCathGas_eV,edepBackGas_eV"
                       ",edepWindowGas_eV,edepCathMylar_eV,edepCathAl_eV"
                       ",edepWindowMylar_eV,edepMesh_eV,edepPadCu_eV"
-                      ",edepFR4_eV,edepCuB_eV,edepFrame_eV";
+                      ",edepPadGapGas_eV,edepFR4_eV,edepCuB_eV,edepFrame_eV";
     if (isFull) {
         fImpl->evtFile << ",edepHe3Gas_eV,edepResistPaste_eV"
                           ",edepMylar_eV,edepCathode_eV,edepMicromesh_eV"
@@ -380,6 +384,8 @@ void RunAction::WriteRunMeta() {
     Double_t bulgeFrontMM, bulgeBackMM, windowUM, cathMylarUM, cathAlUM;
     Double_t meshWireUM, meshOpenUM, fCuCoverage, bCuCoverage;
     Double_t gunXMM, gunYMM, gunThetaDeg, gunPhiDeg, gunStandoffMM;
+    Double_t beamSpreadMM;
+    Double_t driftEntryZ, meshZ, ampEntryZ, padPlaneZ, driftSign;
 
     auto put = [](Char_t* dst, std::size_t n, const std::string& s) {
         std::strncpy(dst, s.c_str(), n - 1);
@@ -432,6 +438,20 @@ void RunAction::WriteRunMeta() {
     gunThetaDeg   = fConfig.p2_gun_theta_deg;
     gunPhiDeg     = fConfig.p2_gun_phi_deg;
     gunStandoffMM = fConfig.p2_gun_standoff_mm;
+    beamSpreadMM  = fConfig.p2_beam_spread_mm;
+
+    // Drift frame. Stage B must not infer drift depth from world z: the gas
+    // sits at positive world z several mm downstream of the window, and
+    // electrons drift toward +z, so "z is the distance drifted" is wrong by
+    // both an offset and a sign. MX17 hit exactly this and had half the gap
+    // at negative depth (response/digitizer/clusters.py). Recorded here so
+    // the conversion is a lookup, not a guess:
+    //     depth_mm = driftSign * (meshZ_mm - z_world_mm)
+    driftEntryZ = fDetCon ? fDetCon->GetP2DriftEntryZ()/mm : 0.0;
+    meshZ       = fDetCon ? fDetCon->GetP2MeshZ()/mm       : 0.0;
+    ampEntryZ   = fDetCon ? fDetCon->GetP2AmpEntryZ()/mm   : 0.0;
+    padPlaneZ   = fDetCon ? fDetCon->GetP2PadPlaneZ()/mm   : 0.0;
+    driftSign   = 1.0;   // +1: drift is toward increasing world z
 
     auto* t = new TTree("RunMeta", "Run provenance (one row per worker file)");
     t->Branch("schemaVersion", &schemaVersion);
@@ -474,6 +494,13 @@ void RunAction::WriteRunMeta() {
     t->Branch("gunTheta_deg",  &gunThetaDeg);
     t->Branch("gunPhi_deg",    &gunPhiDeg);
     t->Branch("gunStandoff_mm",&gunStandoffMM);
+    t->Branch("beamSpread_mm", &beamSpreadMM);
+    // Drift frame -- see the comment above where these are filled.
+    t->Branch("driftEntryZ_mm", &driftEntryZ);
+    t->Branch("meshZ_mm",       &meshZ);
+    t->Branch("ampEntryZ_mm",   &ampEntryZ);
+    t->Branch("padPlaneZ_mm",   &padPlaneZ);
+    t->Branch("driftSign",      &driftSign);
 
     t->Fill();
 #endif
@@ -547,6 +574,7 @@ void RunAction::RecordEvent(const EventData& data) {
     fImpl->br_edepWindowMylar = data.edepWindowMylar;
     fImpl->br_edepMeshP2      = data.edepMeshP2;
     fImpl->br_edepPadCu       = data.edepPadCu;
+    fImpl->br_edepPadGapGas   = data.edepPadGapGas;
     fImpl->br_edepFR4P2       = data.edepFR4P2;
     fImpl->br_edepCuB         = data.edepCuB;
     fImpl->br_edepFrame       = data.edepFrame;
@@ -658,6 +686,7 @@ void RunAction::RecordEvent(const EventData& data) {
                    << "," << data.edepWindowMylar
                    << "," << data.edepMeshP2
                    << "," << data.edepPadCu
+                   << "," << data.edepPadGapGas
                    << "," << data.edepFR4P2
                    << "," << data.edepCuB
                    << "," << data.edepFrame;

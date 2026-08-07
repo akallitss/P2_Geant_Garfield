@@ -8,6 +8,9 @@ re-derived or challenged. Regenerate with:
 python scripts/gerber/p2_wedge_model.py       --out docs/figures/p2_wedge_outline.png
 python scripts/gerber/analyze_p2_readout.py   --plot docs/figures/p2_readout_padmap.png
 python scripts/gerber/analyze_p2_geometry.py                 # full dump
+
+# The pad copper the Geant4 geometry is built from -> include/P2PadMap.hh
+python scripts/gerber/extract_readout_pattern.py --write --compare
 ```
 
 ![wedge outline](figures/p2_wedge_outline.png)
@@ -103,12 +106,51 @@ cross-checked against `design/gerbers/P2_BASKET_Apr26/Gerber/P2_BASKET-F_Cu.gbr`
 | Quantity | Value |
 |---|---|
 | Channels | **1280 pads** = 10 connectors × 128 channels |
-| Radius range | 120.714 … 589.286 mm |
+| Radius range | 120.714 … 589.286 mm (pad *centres*, mapping files) |
 | Azimuth range | 1.0695° … 58.9304° |
 | Radial rings | **42**, pitch **11.429 mm** (constant to 1 µm) |
 | Pads per ring | 9 (inner) → 51 (outer) |
 | Azimuthal arc pitch | ≈ 11.9 mm at every radius (12.9 mm on the innermost ring) |
 | Pad cell | ≈ **11.43 mm × 11.86 mm**, i.e. area-equalized |
+
+### The copper itself (2026-08-07)
+
+The mapping files give pad *centres*; the copper geometry comes from the
+`F_Cu` gerber, where all 1280 pads are G36 regions. Extracted and checked
+feature-by-feature by `scripts/gerber/extract_readout_pattern.py`, which
+writes the table the Geant4 geometry is built from
+(`include/P2PadMap.hh`):
+
+| Quantity | Value | Note |
+|---|---|---|
+| Ring radial pitch | **11.428605 mm** | max deviation of any ring from the fitted line: 0.5 µm |
+| Pad radial height | **11.30170 mm** | spread across all 1280 pads: 0.48 µm |
+| Radial gap between rings | **0.12691 mm** | |
+| Azimuthal gap between pads | **0.122 … 0.127 mm** | grows slightly with radius |
+| φ pitch uniformity within a ring | **6 × 10⁻⁶ rad** | i.e. exact at the gerber's 1 nm coordinate resolution |
+| Pad shape | true annular sector | polygon area = 0.9997 × r·Δφ·Δr, so a `G4Tubs` segment is not an approximation |
+| Total pad copper | **1697.15 cm²** | over a 1715.89 cm² replica envelope = 0.9891; × the radial-gap factor = **0.9781** of the pad-field annulus |
+
+**The grid is exactly regular, so it is cheap to build as real geometry.**
+Each ring is one `G4PVReplica` in φ: 3 logical volumes per ring, 126 for all
+1280 pads, and the navigator finds a pad by index arithmetic rather than by
+searching a daughter list. See `DetectorConstruction::ConstructP2`.
+
+> **The mapping radii sit ~65–80 µm outside the gerber pad mid-radius.**
+> `120.714 + n·11.4290` (mapping) vs `120.6494 + n·11.428605` (gerber pad
+> polygons). Both the offset and the pitch differ slightly. For anything
+> touching copper the gerber is the authority — it *is* the artwork. The
+> difference is 0.6 % of a pad and does not matter for choosing an aim point.
+
+> **The default beam aim point lands in an inter-pad gap.** `SimConfig`'s
+> (302.49, 174.64) = r 349.284 mm, φ = 30.000° was chosen as a *ring centre*
+> to avoid a radial pad boundary — and it is one, to 62 µm. But at exactly
+> 30° it falls **61 µm from the centre of the 126 µm azimuthal gap** between
+> pads 14 and 15 of ring 20. Confirmed in simulation: a pencil muon beam
+> there puts energy into pad copper in only **25 %** of events, versus 100 %
+> at a pad centre. A pad centre in *both* coordinates is
+> **(305.385, 169.399)** — r 349.2215 mm, φ 29.0174°. The aim point has to be
+> chosen against the φ grid as well as the radial one.
 
 > **Units trap:** the `Phi` column in both mapping files is in **radians**,
 > even though it sits next to a `Radius` in mm and the header gives no unit.
@@ -130,10 +172,53 @@ indices run counter-clockwise, but `PadIndex` reverses direction for connectors
 > VMM neighbour logic above all — depends on which one is real.
 > `python3 vmm/nl_map.py` prints the full comparison.
 
-The copper layers corroborate this: `F_Cu` shows 73 distinct pad-centre radii
-with a median spacing of 11.420 mm, and 0.125 mm trace widths. `B_Cu` is a
-single solid ground plane spanning r = 95.09…649.91 mm over the full wedge,
-plus 2560 via pads.
+### Copper coverage — corrected 2026-08-07
+
+> **`B_Cu` is not a ground plane.** An earlier revision of this section said
+> it was "a single solid ground plane spanning r = 95.09…649.91 mm over the
+> full wedge". That is the *bounding box* of one large stitched region, not a
+> plane. `B_Cu` is **30 805 stroked 0.125 mm signal traces** plus 2 × 1280
+> Ø0.8 mm via pads, covering ~18 % of the board. This matches what the
+> collaboration said (Alexandra, 2026-08-05: signal lines, not a plane) and
+> the docstring of `analyze_cu_coverage.py`; only this file was wrong. The
+> model input `p2_bcu_coverage = 0.174` was never affected.
+
+> **`p2_fcu_coverage = 0.983` was wrong and is no longer used.**
+> `analyze_cu_coverage.py` buffered every non-rectangular flash as a disc of
+> radius `ApertureDef.size / 2`, and `size` is `max(params)` — which for
+> KiCad's `RotRect` macro apertures is the **rotation angle in degrees**
+> (`%ADD19RotRect,0.300000X1.800000X302.763000*%`). That painted a ~151 mm-radius
+> disc at each of the 1420 connector-pin flashes on `F_Cu`. Apertures tagged
+> `NonConductor` and `Profile` were counted as copper too. Fixed in that
+> script; the geometry now takes its numbers from
+> `extract_readout_pattern.py` instead.
+
+Corrected coverages, from the exact vector geometry:
+
+| zone | area | F.Cu | B.Cu |
+|---|---|---|---|
+| inner margin, r 95 … 115 mm | 26.0 cm² | 0.123 | 0.123 |
+| pad field, r 115 … 594.9 mm | 1879.6 cm² | 0.913 | 0.171 |
+| fan-out, r 594.9 … 650 mm | 361.6 cm² | 0.180 | 0.235 |
+| **whole board** | **2267.2 cm²** | **0.787** *(was 0.937)* | **0.180** |
+
+Three things a single board-wide number destroys, and why the model is now
+zoned into ten radial bands (`kCuBands` in `include/P2PadMap.hh`):
+
+- **Inside r = 115 mm there is no signal copper on either layer** — only a
+  ~1.7 mm board-edge guard band and four mounting pads. That is why the first
+  band reads identically on `F_Cu` and `B_Cu`: the two layers carry the same
+  artwork there. A 0.983 sheet put ~98 % copper across that 20 mm annulus.
+- **The fan-out is only ~18 % copper on `F_Cu`.** This is a 2-layer board:
+  every pad drops through two vias immediately and *all* the routing happens
+  on `B_Cu`, whose coverage climbs steadily with radius (0.049 → 0.246) as
+  channels are gathered toward the connectors.
+- Over the whole board the old model therefore carried **25 % more F.Cu
+  copper than the artwork has**, most of it deposited where the artwork has
+  almost none.
+
+`F_Cu` also carries 0.125 mm traces, but only in the fan-out band
+(r 620…641 mm); there are none between the pads.
 
 Drill (`P2_BASKET.drl`): 2 × 1280 holes of Ø0.4 mm (two vias per pad), plus 26 ×
 Ø3.5, 24 × Ø2.2, 20 × Ø3.2, 14 × Ø3.5 mm mounting holes — 2644 total.
@@ -155,6 +240,39 @@ Finish: None   (F_ENIG_Finition gerber exists, so pads are ENIG in practice)
 thinner than the MX17 PCB stack (Kapton + 4×(Cu+FR4) + 5 mm Rohacell + Al foil)
 that `DetectorConstruction.cc` currently builds. See the handoff for what this
 means.
+
+### How the two copper layers are built in Geant4 (2026-08-07)
+
+Each 18 µm copper layer is a **gas-filled envelope** (`PCB_Cu_F_Gap`,
+`PCB_Cu_B_Gap`) with the copper placed inside it, rather than one
+board-spanning slab of density-scaled copper. Where the etch removed copper
+there is no copper — there is an 18 µm recess, and what fills it is chamber
+gas: on F.Cu the amplification gap continues down into the inter-pad grooves,
+on B.Cu the back gas gap continues up into them. That gas is scored as
+`edepPadGapGas` (dead gas — below the pad plane, no amplification field, so
+it can never make a signal).
+
+Inside the envelope:
+
+- **F.Cu pad field** — 1280 real annular-sector copper pads, 42 rings, one
+  `G4PVReplica` in φ per ring. Physical-volume name `PCB_Cu_F`, so the
+  existing `edepPadCu` scoring is unchanged in meaning.
+- **everything else** — homogenized, but per radial band (`kCuBands`), not as
+  one board-wide average. B.Cu is homogenized everywhere: 30 805 individually
+  routed traces are not a pattern that replicates.
+
+`--homogenized-readout` switches the pad field back to a density-scaled sheet
+for comparison; both layers stay band-zoned either way. The flag and the
+generated table are folded into `meta::GeometryDigest`, so a patterned run and
+a homogenized run cannot hash the same and be pooled by accident.
+
+Cost, measured on an 8-core laptop with 150 k–200 k photon events: the
+patterned build is **within run-to-run noise of both the homogenized build and
+the pre-2026-08-07 two-slab geometry** (±25 % scatter between repetitions of
+the *same* binary swamped any difference). It adds 126 logical volumes and no
+measurable memory (729 vs 746 MB peak RSS). This is expected — the readout
+copper sits downstream of both gas gaps, and replica navigation is O(1) in the
+number of pads — but it has not been confirmed on a quiet machine.
 
 Everything else in the stack — drift gap, mesh, amplification gap, drift
 cathode, entrance window — is **not** in the gerbers. See open questions in

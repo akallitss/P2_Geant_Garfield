@@ -11,10 +11,12 @@
 #include <memory>
 
 class G4Run;
+class DetectorConstruction;
 
 class RunAction : public G4UserRunAction {
 public:
-    RunAction(const SimConfig& cfg, bool isMaster);
+    RunAction(const SimConfig& cfg, bool isMaster,
+              const DetectorConstruction* detCon = nullptr);
     ~RunAction() override;
 
     void BeginOfRunAction(const G4Run* run) override;
@@ -31,6 +33,7 @@ private:
 
     const SimConfig& fConfig;
     bool             fIsMaster;
+    const DetectorConstruction* fDetCon;
 
     struct Impl;
     std::unique_ptr<Impl> fImpl;

@@ -13,13 +13,13 @@ ActionInitialization::ActionInitialization(const SimConfig& cfg,
     : G4VUserActionInitialization(), fConfig(cfg), fDetCon(detCon) {}
 
 void ActionInitialization::BuildForMaster() const {
-    SetUserAction(new RunAction(fConfig, true));
+    SetUserAction(new RunAction(fConfig, true, fDetCon));
 }
 
 void ActionInitialization::Build() const {
     SetUserAction(new PrimaryGeneratorAction(fConfig, fDetCon));
 
-    auto* runAction   = new RunAction(fConfig, false);
+    auto* runAction   = new RunAction(fConfig, false, fDetCon);
     auto* eventAction = new EventAction(fConfig, runAction);
 
     SetUserAction(runAction);

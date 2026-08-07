@@ -61,6 +61,15 @@ void SteppingAction::ScoreP2Layer(EventData& data, const std::string& v,
     else if (v == "PCB_Cu_F")              data.edepPadCu     += edep_eV;
     else if (v == "PCB_FR4")               data.edepFR4P2     += edep_eV;
     else if (v == "PCB_Cu_B")              data.edepCuB       += edep_eV;
+    // Gas filling the 18 um recesses the etch left in the two copper layers:
+    // the inter-pad grooves, the 0.127 mm gaps between pad rings, and the
+    // whole inner margin and fan-out where the artwork carries little copper.
+    // It is real chamber gas, but it sits below the pad plane where there is
+    // no amplification field, so it can never make a signal — same category
+    // as edepFrontGas/edepBackGas. The old model had no such volume: those
+    // recesses were made of reduced-density copper.
+    else if (v == "PCB_Cu_F_Gap" || v == "PCB_Cu_B_Gap")
+                                           data.edepPadGapGas += edep_eV;
     else if (starts("GasFrame"))           data.edepFrame     += edep_eV;
 }
 

@@ -2,6 +2,7 @@
 
 #include "RunMeta.hh"
 #include "GasMixtures.hh"
+#include "P2PadMap.hh"
 
 #include <cstdint>
 #include <iomanip>
@@ -49,6 +50,17 @@ std::string GeometryDigest(const SimConfig& cfg) {
        << ";cathAl="   << cfg.p2_cath_al_um
        << ";fCu="      << cfg.p2_fcu_coverage
        << ";bCu="      << cfg.p2_bcu_coverage;
+
+    // Readout copper. The flag alone is not enough: the pad grid and the
+    // per-band coverages live in the generated include/P2PadMap.hh, so a
+    // re-extraction from a new gerber revision would silently produce a
+    // different detector under an unchanged hash. Fold the table in.
+    os << ";padPattern=" << (cfg.p2_patterned_readout ? 1 : 0)
+       << ";padRings="   << P2::kNPadRings
+       << ";pads="       << P2::kNPads;
+    for (int i = 0; i < P2::kNCuBands; ++i)
+        os << ';' << P2::kCuBands[i].rIn << ',' << P2::kCuBands[i].rOut
+           << ',' << P2::kCuBands[i].fCu << ',' << P2::kCuBands[i].bCu;
 
     // Beam configuration is not geometry, but a pencil-beam run and a
     // beam-spread run are not interchangeable for any pad-level observable,

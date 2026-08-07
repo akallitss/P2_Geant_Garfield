@@ -68,21 +68,41 @@ struct SimConfig {
                                        //   full-thickness slabs of density-scaled copper.
                                        //   scripts/gerber/analyze_cu_coverage.py
     // Gun aim point, mid-active-area, apex/beam axis is x=y=0.
-    // Moved 2026-08-07 from (307.4, 177.5) = r 354.97 mm, which was chosen as
-    // a round "r = 355, phi = 30" but landed **35 um from a radial pad
-    // boundary** (ring centres are at 120.714 + n*11.4290 mm, so 349.286 and
-    // 360.715 straddle it). A pencil beam parked on a pad boundary makes
-    // "which pad has the most charge" a coin flip and inflates pad
-    // multiplicity -- MX17 lost a first result to precisely this
-    // (MX17_Geant/design/RESPONSE_SIM_PLAN.md §7). Now r = 349.286 mm at
-    // phi = 30 deg, i.e. a ring CENTRE. For any pad-multiplicity or
-    // positional observable use --beam-spread as well; a fixed point, even a
-    // well-chosen one, is not representative.
-    double p2_gun_x_mm       = 302.49; // r = 349.286 mm (ring centre), phi = 30 deg
-    double p2_gun_y_mm       = 174.64;
+    //
+    // This took two attempts, and the reason is worth keeping: the pad plane
+    // is POLAR, so there are two independent ways to sit on a pad boundary
+    // and fixing one does not fix the other.
+    //
+    //   * The original (307.4, 177.5) = r 354.97 mm was a round "r = 355,
+    //     phi = 30" and landed 35 um from a RADIAL boundary — it is not
+    //     inside any pad ring at all.
+    //   * Moving it to a ring centre, (302.49, 174.64), fixed the radius and
+    //     landed 61 um from the centre of the 126 um AZIMUTHAL gap between
+    //     pads 14 and 15 of ring 20. Measured against the real artwork:
+    //     <edepPadCu> 4740 eV with only 25.7 % of events depositing in pad
+    //     copper at all, against 20383 eV and 100 % at a true pad centre.
+    //
+    // A pencil beam parked on a boundary makes "which pad has the most
+    // charge" a coin flip and inflates pad multiplicity, invisibly -- MX17
+    // lost a first result to precisely this
+    // (MX17_Geant/design/RESPONSE_SIM_PLAN.md §7).
+    //
+    // The value below is a pad centre in BOTH coordinates, taken from the
+    // gerber-derived table in include/P2PadMap.hh. That table is the
+    // authority for copper (it is the artwork); the mapping files in
+    // design/mapping/ put ring centres 65-81 um further out and differ in
+    // pitch by 0.4 um/ring. mm_sim checks the aim point against P2PadMap.hh
+    // at startup and warns separately for a radial gap, an azimuthal gap, or
+    // an aim point off the pad field.
+    //
+    // For any pad-multiplicity, charge-sharing or positional observable use
+    // --beam-spread as well: a fixed point, even a correctly chosen one,
+    // describes that point and not the pad cell.
+    double p2_gun_x_mm       = 305.385; // ring 20 pad centre: r 349.2215 mm,
+    double p2_gun_y_mm       = 169.399; //   phi 29.0174 deg
     // Radius [mm] of a uniform disc, transverse to the beam, over which the
     // impact point is scattered per event. 0 = pencil beam. Use >= one ring
-    // pitch (11.43 mm) to average over the pad cell.
+    // pitch (11.4286 mm, gerber value) to average over the pad cell.
     double p2_beam_spread_mm = 0.0;
     // Beam tilt (P0.3). theta is measured from the wedge normal (+z), phi is
     // the azimuth of the tilt in the wedge plane: phi=0 tilts toward +x, 90
@@ -96,6 +116,22 @@ struct SimConfig {
     // Must clear the front window bulge at any theta; the default is checked
     // against the built geometry at run time.
     double p2_gun_standoff_mm = 50.0;
+
+    // ── Readout copper (P0.19) ────────────────────────────────────────────
+    // Build the F.Cu pad field as REAL copper — 1280 annular-sector pads on
+    // the gerber-exact polar grid, 42 G4PVReplica rings — instead of a
+    // density-scaled sheet. Costs 126 logical volumes and no extra memory.
+    // --homogenized-readout turns it off; both layers are zoned by radial
+    // band either way.
+    //
+    // NOTE: p2_fcu_coverage / p2_bcu_coverage above NO LONGER REACH THE
+    // GEOMETRY. The readout copper is built from the per-radial-band table
+    // in include/P2PadMap.hh, measured 2026-08-07 directly from the gerbers.
+    // The 0.983 in particular is wrong — it came from an aperture bug in
+    // scripts/gerber/analyze_cu_coverage.py that painted the 10 connector
+    // footprints as ~150 mm-radius discs (docs/P2_GEOMETRY.md §3). The two
+    // scalars are retained only because meta::GeometryDigest hashes them.
+    bool p2_patterned_readout = true;
 
     // ── Spectrum sampling (kLSCalib / kBackScintCalib) ────────────────────
     // When non-empty, PrimaryGeneratorAction samples electron energies from

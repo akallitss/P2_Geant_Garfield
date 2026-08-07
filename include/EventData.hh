@@ -90,6 +90,8 @@ struct EventData {
     double edepWindowMylar= 0.0;
     double edepMeshP2     = 0.0;
     double edepPadCu      = 0.0;   // PCB_Cu_F — faces the amplification gap
+    double edepPadGapGas  = 0.0;   // gas in the etched recesses of both Cu
+                                   // layers (inter-pad grooves, fan-out): no signal
     double edepFR4P2      = 0.0;
     double edepCuB        = 0.0;
     double edepFrame      = 0.0;
@@ -172,6 +174,7 @@ struct EventData {
         edepFrontGas = edepCathGas = edepBackGas = edepWindowGas = 0.0;
         edepCathMylar = edepCathAl = edepWindowMylar = 0.0;
         edepMeshP2 = edepPadCu = edepFR4P2 = edepCuB = edepFrame = 0.0;
+        edepPadGapGas = 0.0;
 
         trackOrigins.clear();
         firstIntRecorded = false;

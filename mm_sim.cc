@@ -64,6 +64,9 @@ void PrintUsage() {
     std::cerr << "                      raised automatically to clear the window bulge)\n";
     std::cerr << "  --w-cf4 <eV>        Override CF4's W-value to bracket the 35-52 eV spread;\n";
     std::cerr << "                      re-derives the mixture W  (default: table value, 34)\n";
+    std::cerr << "  --homogenized-readout  Build the F.Cu pad field as a density-scaled\n";
+    std::cerr << "                      sheet instead of 1280 real annular-sector pads.\n";
+    std::cerr << "                      Both layers stay zoned by radial band either way.\n";
     std::cerr << "  --spectrum <csv> Sample energies from Sr-90/Y-90 CSV (lscalib/backscintcalib)\n";
     std::cerr << "  --src-dist <mm>  Source-to-detector air gap [mm] (default: 100)\n";
     std::cerr << "  -a <mm>          Al shielding [mm], vacuum mode only  (default: 0)\n";
@@ -129,6 +132,7 @@ int main(int argc, char** argv) {
         else if (arg == "--gun-standoff"&& i+1<argc) config.p2_gun_standoff_mm= std::stod(argv[++i]);
         else if (arg == "--beam-spread" && i+1<argc) config.p2_beam_spread_mm = std::stod(argv[++i]);
         else if (arg == "--w-cf4"       && i+1<argc) config.w_cf4_eV          = std::stod(argv[++i]);
+        else if (arg == "--homogenized-readout")     config.p2_patterned_readout = false;
         else if (arg == "--list-gases") { std::cout << gas::ListMixtures(); return 0; }
         else if (arg[0] != '-') macroFile = arg;
         else { std::cerr << "Unknown option: " << arg << "\n"; PrintUsage(); return 1; }
