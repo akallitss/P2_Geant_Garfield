@@ -113,14 +113,75 @@ def hadd_group(key, files, merged_dir: Path, dry_run=False, quiet=False) -> Path
     return outname
 
 
+def read_run_meta(root_file: Path) -> dict:
+    """Read the RunMeta tree: provenance + the thrown count.
+
+    One row per worker file, so a hadd-merged file has one row per thread.
+    Returns a dict with the summed counts and the run's identity, or {} if the
+    file predates RunMeta (produced before 2026-08-07).
+
+    Two things are checked rather than assumed: that all rows agree on the
+    code revision and geometry hash (they will not if a merge accidentally
+    spans two configurations), and that the run was not produced by a dirty
+    working tree.
+    """
+    try:
+        with uproot.open(root_file) as f:
+            if "RunMeta" not in f:
+                return {}
+            m = f["RunMeta"].arrays(library="pd")
+    except Exception as e:
+        print(f"  ERROR reading RunMeta from {root_file.name}: {e}")
+        return {}
+
+    if len(m) == 0:
+        return {}
+
+    def _s(col):
+        v = m[col].iloc[0]
+        return v.decode() if isinstance(v, bytes) else str(v)
+
+    out = {
+        "git_hash":      _s("gitHash"),
+        "git_dirty":     bool(m["gitDirty"].iloc[0]),
+        "geometry_hash": _s("geometryHash"),
+        "gas":           _s("gas"),
+        "gas_label":     _s("gasLabel"),
+        "w_value_eV":    float(m["wValue_eV"].iloc[0]),
+        "particle":      _s("particle"),
+        "energy_MeV":    float(m["energy_MeV"].iloc[0]),
+        "drift_gap_mm":  float(m["driftGap_mm"].iloc[0]),
+        "gun_theta_deg": float(m["gunTheta_deg"].iloc[0]),
+        "skip_empty":    bool(m["skipEmptyFlag"].iloc[0]),
+        "thrown":        int(m["thrown"].sum()),
+        "written":       int(m["written"].sum()),
+        "skipped_empty": int(m["skippedEmpty"].sum()),
+        "n_workers":     len(m),
+    }
+
+    for col, label in (("gitHash", "code revision"),
+                       ("geometryHash", "geometry hash")):
+        vals = {v.decode() if isinstance(v, bytes) else str(v) for v in m[col]}
+        if len(vals) > 1:
+            print(f"  WARNING: {root_file.name} merges {len(vals)} different "
+                  f"{label}s ({', '.join(sorted(vals))}) — these runs are not "
+                  f"the same run point and must not be pooled.")
+    if out["git_dirty"]:
+        print(f"  WARNING: {root_file.name} was produced by a DIRTY working "
+              f"tree at {out['git_hash']} — the result is not reproducible "
+              f"from a commit.")
+    return out
+
+
 def read_event_tree(root_file: Path) -> pd.DataFrame:
     """Read EventTree into a pandas DataFrame.
 
     WARNING: if the run used --skip-empty (photon runs), the tree holds only
     events with at least one gas cluster, so every mean/rate computed below
     is CONDITIONAL on a hit and must not be read as a per-incident-particle
-    number. The thrown count is printed in the run summary, not stored here;
-    the run manifest has to carry it. See docs/OUTPUT_FORMAT.md §4.
+    number. Divide by RunMeta's `thrown` (read_run_meta), never by
+    len(df)/GetEntries() — the two differ by ~300x on a 60 keV photon run.
+    See docs/OUTPUT_FORMAT.md §4.
     """
     try:
         with uproot.open(root_file) as f:

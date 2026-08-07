@@ -2,6 +2,8 @@
 // Writes ROOT TTrees (or CSV fallback) per worker thread.
 
 #include "RunAction.hh"
+#include "GasMixtures.hh"
+#include "RunMeta.hh"
 #include "G4Run.hh"
 #include "G4SystemOfUnits.hh"
 #include "G4Threading.hh"
@@ -313,6 +315,7 @@ void RunAction::EndOfRunAction(const G4Run* run) {
     if (!fIsMaster) {
 #ifdef USE_ROOT
         if (fImpl->rootFile) {
+            WriteRunMeta();
             fImpl->rootFile->Write();
             fImpl->rootFile->Close();
             delete fImpl->rootFile;
@@ -356,6 +359,124 @@ void RunAction::EndOfRunAction(const G4Run* run) {
                    << "   [--skip-empty: divide rates by this]" << G4endl;
         G4cout << "===============================" << G4endl;
     }
+}
+
+// ============================================================
+void RunAction::WriteRunMeta() {
+#ifdef USE_ROOT
+    if (!fImpl->rootFile) return;
+    fImpl->rootFile->cd();
+
+    // Fixed-size char buffers, not std::string branches: hadd merges these
+    // without a dictionary, which is the whole point of putting the metadata
+    // in the file rather than beside it.
+    Char_t   gitHash[32], geoHash[32], gasName[32], gasLabel[64];
+    Char_t   modeName[24], particle[24], geoDigest[1024];
+    Int_t    gitDirty, threadID, schemaVersion = 1;
+    Long64_t thrown, written, skippedEmpty;
+    Bool_t   skipEmptyFlag;
+    Double_t energyMeV, seed, wValue, gasDensity;
+    Double_t driftMM, ampUM, frontGapMM, cathGapMM, backGapMM;
+    Double_t bulgeFrontMM, bulgeBackMM, windowUM, cathMylarUM, cathAlUM;
+    Double_t meshWireUM, meshOpenUM, fCuCoverage, bCuCoverage;
+    Double_t gunXMM, gunYMM, gunThetaDeg, gunPhiDeg, gunStandoffMM;
+
+    auto put = [](Char_t* dst, std::size_t n, const std::string& s) {
+        std::strncpy(dst, s.c_str(), n - 1);
+        dst[n - 1] = '\0';
+    };
+
+    const gas::Mixture& mix = gas::Find(fConfig.gas);
+    const std::string modeStr =
+        (fConfig.mode == SimMode::kP2Wedge         ? "p2"            :
+         fConfig.mode == SimMode::kFullExperiment  ? "full"          :
+         fConfig.mode == SimMode::kSr90Calibration ? "sr90"          :
+         fConfig.mode == SimMode::kSr90NoMM        ? "sr90nomm"      :
+         fConfig.mode == SimMode::kLSCalib         ? "lscalib"       :
+         fConfig.mode == SimMode::kBackScintCalib  ? "backscintcalib": "vacuum");
+
+    put(gitHash,   sizeof(gitHash),   meta::GitHash());
+    put(geoHash,   sizeof(geoHash),   meta::GeometryHash(fConfig));
+    put(geoDigest, sizeof(geoDigest), meta::GeometryDigest(fConfig));
+    put(gasName,   sizeof(gasName),   fConfig.gas);
+    put(gasLabel,  sizeof(gasLabel),  mix.label);
+    put(modeName,  sizeof(modeName),  modeStr);
+    put(particle,  sizeof(particle),  fConfig.particle);
+
+    gitDirty      = meta::GitDirty() ? 1 : 0;
+    threadID      = G4Threading::G4GetThreadId();
+    thrown        = fTotalEvents;
+    written       = fWrittenEvents;
+    skippedEmpty  = fSkippedEmpty;
+    skipEmptyFlag = fConfig.skipEmpty;
+    energyMeV     = fConfig.energy / MeV;
+    seed          = static_cast<Double_t>(fConfig.seed);
+    wValue        = gas::MixtureWValue(mix, fConfig.w_cf4_eV);
+    gasDensity    = gas::MixtureDensity(mix);
+    driftMM       = fConfig.p2_drift_mm;
+    ampUM         = fConfig.p2_amp_um;
+    frontGapMM    = fConfig.p2_front_gap_mm;
+    cathGapMM     = fConfig.p2_cath_gap_mm;
+    backGapMM     = fConfig.p2_back_gap_mm;
+    bulgeFrontMM  = fConfig.p2_bulge_front_mm;
+    bulgeBackMM   = fConfig.p2_bulge_back_mm;
+    windowUM      = fConfig.p2_window_um;
+    cathMylarUM   = fConfig.p2_cath_mylar_um;
+    cathAlUM      = fConfig.p2_cath_al_um;
+    meshWireUM    = fConfig.p2_mesh_wire_um;
+    meshOpenUM    = fConfig.p2_mesh_open_um;
+    fCuCoverage   = fConfig.p2_fcu_coverage;
+    bCuCoverage   = fConfig.p2_bcu_coverage;
+    gunXMM        = fConfig.p2_gun_x_mm;
+    gunYMM        = fConfig.p2_gun_y_mm;
+    gunThetaDeg   = fConfig.p2_gun_theta_deg;
+    gunPhiDeg     = fConfig.p2_gun_phi_deg;
+    gunStandoffMM = fConfig.p2_gun_standoff_mm;
+
+    auto* t = new TTree("RunMeta", "Run provenance (one row per worker file)");
+    t->Branch("schemaVersion", &schemaVersion);
+    t->Branch("gitHash",        gitHash,   "gitHash/C");
+    t->Branch("gitDirty",      &gitDirty);
+    t->Branch("geometryHash",   geoHash,   "geometryHash/C");
+    t->Branch("geometryDigest", geoDigest, "geometryDigest/C");
+    t->Branch("mode",           modeName,  "mode/C");
+    t->Branch("gas",            gasName,   "gas/C");
+    t->Branch("gasLabel",       gasLabel,  "gasLabel/C");
+    t->Branch("gasDensity_g_cm3", &gasDensity);
+    t->Branch("wValue_eV",      &wValue);
+    t->Branch("particle",       particle,  "particle/C");
+    t->Branch("energy_MeV",    &energyMeV);
+    t->Branch("seed",          &seed);
+    t->Branch("threadID",      &threadID);
+    // The normalization denominator. Under --skip-empty the trees hold far
+    // fewer rows than events thrown; anything divided by GetEntries() is
+    // silently wrong by ~300x on a photon run.
+    t->Branch("thrown",        &thrown);
+    t->Branch("written",       &written);
+    t->Branch("skippedEmpty",  &skippedEmpty);
+    t->Branch("skipEmptyFlag", &skipEmptyFlag);
+    t->Branch("driftGap_mm",   &driftMM);
+    t->Branch("ampGap_um",     &ampUM);
+    t->Branch("frontGap_mm",   &frontGapMM);
+    t->Branch("cathGap_mm",    &cathGapMM);
+    t->Branch("backGap_mm",    &backGapMM);
+    t->Branch("bulgeFront_mm", &bulgeFrontMM);
+    t->Branch("bulgeBack_mm",  &bulgeBackMM);
+    t->Branch("window_um",     &windowUM);
+    t->Branch("cathMylar_um",  &cathMylarUM);
+    t->Branch("cathAl_um",     &cathAlUM);
+    t->Branch("meshWire_um",   &meshWireUM);
+    t->Branch("meshOpen_um",   &meshOpenUM);
+    t->Branch("fCuCoverage",   &fCuCoverage);
+    t->Branch("bCuCoverage",   &bCuCoverage);
+    t->Branch("gunX_mm",       &gunXMM);
+    t->Branch("gunY_mm",       &gunYMM);
+    t->Branch("gunTheta_deg",  &gunThetaDeg);
+    t->Branch("gunPhi_deg",    &gunPhiDeg);
+    t->Branch("gunStandoff_mm",&gunStandoffMM);
+
+    t->Fill();
+#endif
 }
 
 // ============================================================

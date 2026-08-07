@@ -24,6 +24,11 @@ public:
     void RecordEvent(const EventData& data);
 
 private:
+    // One-row-per-worker provenance tree; see include/RunMeta.hh for why it
+    // has to live in the file rather than in the submit script's manifest.
+    // Written at end of run, because `thrown` is not known before then.
+    void WriteRunMeta();
+
     const SimConfig& fConfig;
     bool             fIsMaster;
 

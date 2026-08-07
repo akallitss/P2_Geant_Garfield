@@ -4,16 +4,43 @@
 output section of `MX17_README.md` for `p2` mode; the inherited MX17 modes
 still write what they always did, plus the new generic per-volume scoring.
 
-Each worker thread writes `<out>_t<N>.root` with three trees (or, without
+Each worker thread writes `<out>_t<N>.root` with four trees (or, without
 ROOT, `<out>_t<N>_{events,clusters,volumes}.csv`). `hadd` them, or chain.
 
 ---
 
+## 0. `RunMeta` — one row per worker file *(added 2026-08-07)*
+
+Provenance that travels inside the file. Before this existed, the thrown
+count and the code revision lived only in the job's stdout, so a ROOT file
+separated from its log was unnormalizable and strictly unidentifiable —
+against the campaign plan's §9 "no un-manifested runs" rule.
+
+`hadd` concatenates the rows, which is the wanted behaviour: a merged file
+carries one row per worker, `thrown` **sums**, and a disagreement between
+rows is visible rather than silent.
+
+| branch | meaning |
+|---|---|
+| `thrown` | **the normalization denominator** — events actually generated |
+| `written`, `skippedEmpty`, `skipEmptyFlag` | rows kept vs dropped by `--skip-empty` |
+| `gitHash`, `gitDirty` | source revision the binary was built from; `gitDirty=1` means uncommitted changes were present, i.e. the run is not reproducible from a commit |
+| `geometryHash` | FNV-1a over every geometry-affecting parameter. **Rows with different hashes are different run points and must not be pooled.** |
+| `geometryDigest` | the key=value text that hash is taken over, so a mismatch can be diagnosed rather than merely detected |
+| `gas`, `gasLabel`, `gasDensity_g_cm3`, `wValue_eV` | resolved composition, not just the name |
+| `mode`, `particle`, `energy_MeV`, `seed`, `threadID` | |
+| `driftGap_mm`, `ampGap_um`, `frontGap_mm`, `cathGap_mm`, `backGap_mm`, `bulgeFront_mm`, `bulgeBack_mm`, `window_um`, `cathMylar_um`, `cathAl_um`, `meshWire_um`, `meshOpen_um`, `fCuCoverage`, `bCuCoverage` | the geometry as run |
+| `gunX_mm`, `gunY_mm`, `gunTheta_deg`, `gunPhi_deg`, `gunStandoff_mm` | beam aim point and tilt |
+
+`scripts/collect_results.py: read_run_meta()` reads it, sums `thrown` across
+workers, and warns on a dirty tree or on mixed git/geometry hashes. Files
+produced before 2026-08-07 have no `RunMeta`; it returns `{}` for those.
+
 ## 1. `EventTree` — one row per event
 
 Unless `--skip-empty` is given, in which case only events with at least one
-gas cluster are written. **The thrown count is printed at end of run and is
-the correct normalization denominator** — the tree does not contain it.
+gas cluster are written. **`RunMeta.thrown` is the correct normalization
+denominator**, not `GetEntries()`.
 
 ### Core
 
@@ -118,7 +145,11 @@ to catch deposits in layers nobody thought to add a named branch for.
   **Penning transfer**, which lowers the effective W in neon mixtures — so
   comparing Ar and Ne on `nPrimary` at fixed edep is biased. Prefer `edep`
   as the primary observable until Stage B does the conversion properly.
-  (Campaign plan §5 step 3a.)
+  (Campaign plan §5 step 3a.) The W actually used is recorded per run in
+  `RunMeta.wValue_eV`; since 2026-08-07 it is derived from the mixture
+  (stopping-power weighted over components, `src/GasMixtures.cc`) rather
+  than read from a hand-maintained per-gas table, so every neon-mixture
+  value is explicitly an **upper bound** until Penning transfer is modelled.
 - **`edepAmp` is not proportional to signal.** An electron born at depth z
   in the 150 µm amplification gap is amplified only over the remaining
   distance, so the gain spans ~4 decades within that one volume. Use
@@ -126,8 +157,8 @@ to catch deposits in layers nobody thought to add a named branch for.
   `edepDrift`.
 - **Rayleigh scattering deposits nothing** and is excluded from
   `firstIntProcess`. Do not count it as an interaction.
-- With `--skip-empty`, divide all rates by the **thrown** count from the run
-  summary, not by `GetEntries()`.
+- With `--skip-empty`, divide all rates by **`RunMeta.thrown`** (summed over
+  worker rows), not by `GetEntries()`. At 60 keV the two differ by ~300×.
 
 ## 5. Making the plot this was all built for
 
