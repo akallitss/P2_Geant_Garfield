@@ -196,3 +196,54 @@ production uses a similar bulk process, the same pattern likely applies.
 **Ask for:** the P2 bulk pillar mask (diameter + pitch), or confirm the
 MX17-like 0.6 mm / 4.68 mm pattern, then add pillars as daughters of the
 `AmpGas` volume as MX17 does.
+
+---
+
+## ⬜ Readout-copper zoning, real pad/strip pattern, resistive layer
+
+*(Dylan / MX17_Geant, 2026-08-06.)* Three accuracy upgrades landed in
+MX17_Geant that apply just as well to the P2 wedge. Ordered by effort/benefit.
+
+### 1. Zone the Cu coverage — cheap, and P2 currently has the error
+
+`SimConfig.hh` documents `p2_fcu_coverage = 0.983` / `p2_bcu_coverage = 0.174`
+as measured **over the active area**, but `EffCu` then applies them to a
+copper slab spanning the whole wedge board. So the model puts near-solid
+copper out in the fan-out/periphery, where the real coverage is far lower.
+
+MX17 had the mirror-image of this bug (one *board-wide* average applied
+everywhere, giving 26 % too little copper in the active area and ~10× too
+much outside). The fix costs two volumes and no CPU: build each Cu layer as
+an active-area zone plus a homogenized remainder, each at its own measured
+coverage. See `BuildReadoutZone` in `MX17_Geant/shared/MX17ModuleGeometry.hh`.
+**Needed input:** re-run the P2 coverage script reporting active *and*
+outside-active fractions separately (it currently reports one number).
+
+### 2. Real pad/strip pattern — ~3 % CPU if the artwork is regular
+
+If the P2 readout artwork is a regular grid (MX17's is exactly 512 × 512 on a
+0.78 mm pitch), it can be built as real geometry with two nested
+`G4PVReplica` levels: the whole 786432-feature MX17 pattern costs **15 extra
+volumes**, not 786432 placements, ~+3 % CPU and no extra memory. Only worth it
+for backscatter off the board — the signal copper is downstream of both gas
+gaps. **Needed input:** confirm the P2 pad/strip artwork is periodic.
+
+### 3. Resistive layer — P2 models it as a solid slab
+
+`DetectorConstruction.cc` places `ResistivePaste` as a **100 µm slab of
+full-density (1.4 g/cm³) paste** covering the whole wedge, with no coverage
+scaling and no structure. MX17's is now 515 discrete 550 µm ESL strips on a
+0.8 mm pitch inside a gas-filled envelope, so the inter-strip grooves are real
+chamber gas. This matters more than the copper pattern: the resist is the
+first solid the avalanche region sees and it is 100 µm thick, ~5× a P2 Cu
+layer. **Needed input:** is the P2 resistive layer strips, a uniform DLC/paste
+sheet, or pads? If it is uniform, the current solid slab is right and only the
+thickness/density need confirming — but that should be stated, not assumed.
+
+### Do NOT port the MX17 rasterizer fix
+
+MX17's `analyze_cu_coverage.py` had an endpoint-inclusive PIL bug that
+inflated every feature by one pixel per dimension (+16 % on 0.68 mm pads at
+0.05 mm/px), so its published coverages were ~13 % high until 2026-08-06.
+**P2's equivalent script uses shapely (exact vector geometry) and is not
+affected.** Flagged only so nobody "fixes" a bug that is not there.
