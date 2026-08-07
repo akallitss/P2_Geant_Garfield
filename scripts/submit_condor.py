@@ -178,7 +178,15 @@ def write_wrapper_script(job_dir: Path, exe: str, setup_script: str) -> Path:
         echo "  Al (mm)  : $AL_MM"
         echo "=================="
 
+        # -m vacuum is EXPLICIT and must stay. This script is the vacuum /
+        # Al-shielding scan (that is what -a means), but mm_sim's default mode
+        # is p2. Omitting -m therefore ran the P2 wedge geometry at default
+        # gaps, with no angle or beam-spread control, under an Al-shielding
+        # tag that collect_results.py then read as a vacuum-mode point --
+        # wrong results with no error anywhere. Use submit_condor_p2.py for
+        # P2 campaign runs.
         "{exe}" \\
+            -m vacuum      \\
             -g "$GAS"      \\
             -p "$PARTICLE" \\
             -e "$ENERGY"   \\

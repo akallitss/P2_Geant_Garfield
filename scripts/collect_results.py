@@ -52,10 +52,15 @@ def _tqdm_write(msg):
 
 
 # Regex to parse job tag: gas_particle_energyMeV[_Al{mm}mm]
+# Filename fallback only. The gas alternation used to be a hardcoded list of
+# the eight inherited MX17 mixtures, so every campaign gas added in 2026-08-07
+# (NeIso9010, ArCO2Iso9352, ...) failed to match and the files were silently
+# DROPPED -- find_root_files skipped anything parse_tag returned None for, so
+# a whole campaign could produce "no results" with no error. The gas group is
+# now generic; grouping prefers RunMeta anyway (see group_root_files).
 TAG_RE = re.compile(
-    r"^(?P<gas>ArCF4CO2|ArCF4Iso|ArCF4|HeEth|ArCO2|NeIso|NeCF4"
-    r"|PureEthane|PureIso|PureCF4|PureCO2|PureAr|PureHe|PureNe)"
-    r"_(?P<particle>gamma|electron|neutron|proton|muon)"
+    r"^(?P<gas>[A-Za-z][A-Za-z0-9]*)"
+    r"_(?P<particle>gamma|electron|neutron|proton|muon|positron|pion|alpha|triton)"
     r"_(?P<energy>[0-9ep.+-]+)MeV"
     r"(_Al(?P<al_mm>[0-9p]+)mm)?"
     r"(_t\d+)?\.root$"
@@ -76,22 +81,72 @@ def parse_tag(fname: str):
     return m.group("gas"), m.group("particle"), energy, al_mm
 
 
-def find_root_files(indir: Path):
-    """Group ROOT files by (gas, particle, energy) tag."""
+def group_root_files(indir: Path, quiet: bool = False):
+    """Group worker files into run points.
+
+    Prefers RunMeta, which states what a file IS, over the filename, which
+    only states what someone named it. Files carrying RunMeta group on
+    (gas, particle, energy, drift gap, theta, geometry hash) -- so two runs
+    that differ only in geometry cannot be merged even if identically named,
+    which filename grouping could not detect at all.
+
+    Files without RunMeta (produced before 2026-08-07) fall back to the
+    filename regex. Anything that matches neither is REPORTED, not silently
+    dropped -- the previous behaviour hid whole campaigns.
+    """
     groups = defaultdict(list)
+    unmatched = []
     for f in sorted(indir.glob("*.root")):
+        m = read_run_meta(f)
+        if m:
+            groups[(m["gas"], m["particle"], m["energy_MeV"],
+                    m["drift_gap_mm"], m["gun_theta_deg"],
+                    m["geometry_hash"])].append(f)
+            continue
         parsed = parse_tag(f.name)
         if parsed:
-            groups[parsed].append(f)
+            gas, particle, energy, al_mm = parsed
+            groups[(gas, particle, energy, al_mm, 0.0, "no-runmeta")].append(f)
+        else:
+            unmatched.append(f)
+
+    if unmatched and not quiet:
+        print(f"  WARNING: {len(unmatched)} ROOT file(s) matched neither "
+              f"RunMeta nor the filename pattern and were NOT collected:")
+        for f in unmatched[:10]:
+            print(f"    {f.name}")
+        if len(unmatched) > 10:
+            print(f"    ... and {len(unmatched) - 10} more")
     return groups
+
+
+def find_root_files(indir: Path):
+    """Backwards-compatible alias; prefer group_root_files."""
+    return group_root_files(indir)
+
+
+def key_fields(key):
+    """Unpack a group key into (gas, particle, energy, extra, theta, geohash).
+
+    `extra` is the drift gap in mm for RunMeta-grouped points and the Al
+    thickness in mm for legacy filename-grouped ones; both are only used to
+    keep distinct run points in distinct files.
+    """
+    gas, particle, energy, extra, theta, geohash = key
+    return gas, particle, energy, extra, theta, geohash
 
 
 def hadd_group(key, files, merged_dir: Path, dry_run=False, quiet=False) -> Path:
     """Merge thread files into one file using hadd."""
-    gas, particle, energy, al_mm = key
+    gas, particle, energy, extra, theta, geohash = key_fields(key)
     e_str  = f"{energy:.6g}".replace(".", "p")
-    al_str = f"_Al{al_mm:g}mm".replace(".", "p") if al_mm > 0 else ""
-    outname = merged_dir / f"{gas}_{particle}_{e_str}MeV{al_str}_merged.root"
+    # The geometry hash goes in the merged name so two run points that differ
+    # only in geometry cannot collide on one output file.
+    x_str  = f"_x{extra:g}".replace(".", "p") if extra else ""
+    th_str = f"_th{theta:g}".replace(".", "p") if theta else ""
+    g_str  = f"_{geohash[:8]}" if geohash and geohash != "no-runmeta" else ""
+    outname = (merged_dir /
+               f"{gas}_{particle}_{e_str}MeV{x_str}{th_str}{g_str}_merged.root")
 
     if outname.exists():
         return outname  # already merged
@@ -129,30 +184,33 @@ def read_run_meta(root_file: Path) -> dict:
         with uproot.open(root_file) as f:
             if "RunMeta" not in f:
                 return {}
-            m = f["RunMeta"].arrays(library="pd")
+            # numpy, not pandas: this is a handful of rows of metadata and
+            # keeping it pandas-free makes it usable (and testable) from
+            # lighter tooling than the rest of this script needs.
+            m = f["RunMeta"].arrays(library="np")
     except Exception as e:
         print(f"  ERROR reading RunMeta from {root_file.name}: {e}")
         return {}
 
-    if len(m) == 0:
+    if len(m.get("thrown", [])) == 0:
         return {}
 
     def _s(col):
-        v = m[col].iloc[0]
+        v = m[col][0]
         return v.decode() if isinstance(v, bytes) else str(v)
 
     out = {
         "git_hash":      _s("gitHash"),
-        "git_dirty":     bool(m["gitDirty"].iloc[0]),
+        "git_dirty":     bool(m["gitDirty"][0]),
         "geometry_hash": _s("geometryHash"),
         "gas":           _s("gas"),
         "gas_label":     _s("gasLabel"),
-        "w_value_eV":    float(m["wValue_eV"].iloc[0]),
+        "w_value_eV":    float(m["wValue_eV"][0]),
         "particle":      _s("particle"),
-        "energy_MeV":    float(m["energy_MeV"].iloc[0]),
-        "drift_gap_mm":  float(m["driftGap_mm"].iloc[0]),
-        "gun_theta_deg": float(m["gunTheta_deg"].iloc[0]),
-        "skip_empty":    bool(m["skipEmptyFlag"].iloc[0]),
+        "energy_MeV":    float(m["energy_MeV"][0]),
+        "drift_gap_mm":  float(m["driftGap_mm"][0]),
+        "gun_theta_deg": float(m["gunTheta_deg"][0]),
+        "skip_empty":    bool(m["skipEmptyFlag"][0]),
         "thrown":        int(m["thrown"].sum()),
         "written":       int(m["written"].sum()),
         "skipped_empty": int(m["skippedEmpty"].sum()),
@@ -310,7 +368,7 @@ def main():
     print(f"Output dir: {outdir}")
 
     # Find files
-    groups = find_root_files(indir)
+    groups = group_root_files(indir, quiet=_TQDM)
     if not groups:
         print("ERROR: No matching ROOT files found in", indir)
         sys.exit(1)
@@ -355,7 +413,7 @@ def main():
                   if merged[k] and merged[k].exists()]
 
     def _summarize_one(key):
-        gas, particle, energy, al_mm = key
+        gas, particle, energy, al_mm, _theta, _geo = key_fields(key)
         root_file = merged[key]
         df = read_event_tree(root_file)
         if df.empty:
@@ -374,7 +432,7 @@ def main():
             it = tqdm(it, total=len(future_to_key), desc="summarise", unit="file")
         for fut in it:
             key = future_to_key[fut]
-            gas, particle, energy, al_mm = key
+            gas, particle, energy, al_mm, _theta, _geo = key_fields(key)
             al_tag = f"  Al={al_mm:g}mm" if al_mm > 0 else ""
             try:
                 rkey, row, cdf = fut.result()
