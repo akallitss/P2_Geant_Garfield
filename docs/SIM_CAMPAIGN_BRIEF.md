@@ -13,6 +13,13 @@ This brief remains the capabilities/assumptions snapshot it was; its §5
 > [`OUTPUT_FORMAT.md`](OUTPUT_FORMAT.md). Measured speeds:
 > [`BENCHMARKS.md`](BENCHMARKS.md). Open external asks:
 > [`NEEDED_INPUTS.md`](NEEDED_INPUTS.md).
+> **(3) Added 2026-08-06:** the §5 observable list below should also carry
+> **per-hit time resolution σ_t** — now a campaign deliverable with a first
+> prediction (10–13 ns argon / 15–25 ns neon,
+> [`research/TIME_RESOLUTION_NOTES.md`](research/TIME_RESOLUTION_NOTES.md)) —
+> and "pad multiplicity" must be quoted with the **neighbor-logic state**
+> stated (baseline: NL off; on this pad plane NL reads chip-channel
+> neighbors, which are mostly not spatial neighbors — `vmm/README.md` §3.1).
 
 Companion docs:
 
@@ -164,7 +171,8 @@ from 4 mm down to 1 mm, across the realistic incidence range?
 
 Suggested per-run observables: distribution of nPrimDrift (mean, Fano-ish
 width, zero-cluster fraction = inefficiency proxy), cluster z-profile within
-the drift gap, transverse cluster spread and pad multiplicity after mapping,
+the drift gap, transverse cluster spread and pad multiplicity after mapping
+(state the neighbor-logic setting; baseline off), per-hit time resolution σ_t,
 edep spectra, fraction of events with delta rays escaping into pads,
 photon-conversion probability per layer (photon runs). Statistics: 10⁴–10⁵
 events/point is cheap (thin detector); the zero-cluster tail at 1 mm drift

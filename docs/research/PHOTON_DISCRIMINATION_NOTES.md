@@ -346,9 +346,16 @@ that can move a conclusion; the last group are percent-level.
    which are track-like in time as well as in charge.
 5. **Charge sharing across pads with a per-pad threshold.** A MIP spread
    over two pads can fall below threshold on both while a point deposit on
-   one pad fires. Helps a max-pad discriminant, hurts a summed-charge one;
-   neighbor logic partially recovers it. At the nominal 10° incidence a
-   track averages only ~1.1 pads, so this is smaller than it sounds.
+   one pad fires. Helps a max-pad discriminant, hurts a summed-charge one.
+   At the nominal 10° incidence a track averages only ~1.1 pads, so this is
+   smaller than it sounds. *(Corrected 2026-08-06: "neighbor logic partially
+   recovers it" — barely. NL reads chip-channel neighbors, which are the
+   physical neighbor 74 % of the time in one mapping revision and 7.7 % in
+   the other; P(the sharing partner is in the NL set) = 36 % / 2 %, and the
+   baseline is NL off anyway. The recovery mechanism that does work is
+   offline clustering on geometric adjacency, which needs both pads above
+   threshold — exactly the case this item is about. See `vmm/README.md`
+   §3.1.)*
 6. **ADC saturation** (10-bit PDO, ~8-bit effective). Rails on the largest
    deposits. Harmless for a *window* cut (saturated ⇒ rejected) but it
    destroys any shape information above the rail, and it interacts with

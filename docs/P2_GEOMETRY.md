@@ -120,6 +120,16 @@ ordering is described in `design/mapping/README` (in French): channel and pad
 indices run counter-clockwise, but `PadIndex` reverses direction for connectors
 5–9.
 
+> **The two mapping files agree on the pads and disagree on the channels**
+> (2026-08-06). All 1280 pad positions match to 2.5 µm, so every geometric
+> number in this section is revision-independent. But only **11/1280
+> (connector, channel) pairs land on the same pad**: the 9-column file steps
+> mostly along a ring (68 % azimuthal, 32 % radial, consecutive channels a
+> median 11.9 mm apart), while the 7-column file interleaves radial columns
+> (consecutive channels a median **126 mm** apart). Anything channel-level —
+> VMM neighbour logic above all — depends on which one is real.
+> `python3 vmm/nl_map.py` prints the full comparison.
+
 The copper layers corroborate this: `F_Cu` shows 73 distinct pad-centre radii
 with a median spacing of 11.420 mm, and 0.125 mm trace widths. `B_Cu` is a
 single solid ground plane spanning r = 95.09…649.91 mm over the full wedge,

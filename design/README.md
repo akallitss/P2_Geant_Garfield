@@ -72,8 +72,18 @@ From `wedge_det_design/Maarten-Irakli-mapping/`. Two revisions of the same
 - `Mapping/connector_0..9.txt` — 9 columns, adds `X`, `Y`, `PadName`, ordered
   inner radius outward, plus `MappingFx2Mec.xlsx`
 
-They agree on 1201 of 1280 pad positions. **Which one the DAQ uses is an open
-question** — see the handoff.
+They describe the **same pad plane** — matched by nearest neighbour, all 1280
+pads agree to 2.5 µm (print precision). *(An earlier note here said "1201 of
+1280 agree"; that came from comparing coordinates rounded to 0.01 mm and was
+an artifact — fixed in `scripts/gerber/analyze_p2_readout.py` on 2026-08-06.)*
+
+What they genuinely disagree on is the **channel assignment**: only
+**11 of 1280 (connector, channel) pairs land on the same pad**. Geometric
+pad-level work is therefore safe with either file; anything per-channel is
+not — VMM neighbour logic, dead-channel masks, per-channel test-beam
+comparisons. **Which one the DAQ uses is an open question** — see the
+handoff, and `vmm/nl_map.py` for what it changes (chan ±1 is a 12 mm
+neighbour in one revision and a 126 mm one in the other).
 
 `README` (French) documents the index conventions. `module_equalized.gbr` is a
 non-CAD gerber of raw draw commands in mm that goes with the mapping, with a

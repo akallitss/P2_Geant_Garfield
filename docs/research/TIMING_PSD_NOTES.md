@@ -4,7 +4,19 @@
 possibilities"). Status: **ideas + study plan, nothing simulated yet.**
 Companion docs: `../SIM_CAMPAIGN_PLAN.md` §5 step 6 (campaign hook),
 `../TESTBEAM_PLAN.md` §2 (data-side asks), `../../vmm/README.md` (emulator
-that runs these studies).
+that runs these studies), **`TIME_RESOLUTION_NOTES.md` (2026-08-06 — how
+*well* we can time a hit, as opposed to this document's question of what the
+time structure can *discriminate*; the two share a tool and a physics
+input, 1/(n_p·v_d))**.
+
+> **Update 2026-08-06 — the price of handle 1 is now measured.** The
+> short-peaking scheme costs MIP efficiency at fixed threshold far more than
+> this note assumed: at 2 fC, going t_p = 100 → 50 → 25 ns costs
+> 99.4 % → 96.7 % → **77.8 %** in Ar/CO₂/Iso and 92.6 % → 78.1 % → **42.1 %**
+> in Ne/CH₄ (`TIME_RESOLUTION_NOTES.md` §3). That is before any ENC penalty,
+> which was the cost this note flagged. Handle 1 therefore needs a
+> simultaneous threshold reduction to survive, and the ROC must be evaluated
+> at matched ε_e, not at matched threshold.
 
 > **⚠ Caution added later on 2026-08-05, read before investing here.** The
 > §8 kill criterion "if the conversion budget says wall through-goers
@@ -94,7 +106,14 @@ uniform over the full drift window. Consequences:
   even after the coincidence.
 
 **Study**: track-TDO pdf from Stage B + T1 per gas; validated against the
-SPS muon TDO distributions (`TESTBEAM_PLAN.md` §2.6).
+SPS muon TDO distributions (`TESTBEAM_PLAN.md` §2.6). **Partly done
+2026-08-06**: the track-side TDO width is now predicted —
+σ_t ≈ 12 ns (Ar mixes) to 25 ns (Ne/CO₂/Iso), walk-corrected
+(`TIME_RESOLUTION_NOTES.md`). This is the *floor* on the coincidence
+window: it cannot be tightened below a few σ_t without losing real triples,
+so the achievable window differs by 2× between argon and the slow neon
+ternary — 4× in accidental doubles, 8× in triples. What remains is the
+photon-side TDO pdf (uniform over the drift window), which needs Stage B.
 
 ## 5. Handle 4 (speculative) — heterogeneous layer configs
 
@@ -114,8 +133,14 @@ before proposing; the efficiency cost lives entirely on the shape layer.
   not two — not available without config games (§5).
 - **Neighbor-logic timestamps**: NL channels record their own (tiny-
   threshold) crossing times → crude early-edge samples on adjacent pads;
-  at ~1.1 pads/track there is rarely a neighbor with charge. Revisit only
-  at large angles.
+  at ~1.1 pads/track there is rarely a neighbor with charge. **Dead as of
+  2026-08-06**, for a second and independent reason: NL fires on *chip
+  channel* neighbors, which on this pad plane are the physical neighbor only
+  74 % of the time in the best mapping revision and 7.7 % in the other, and
+  P(the sharing partner is in the NL set) is 36 % / 2 % (`vmm/nl_map.py`).
+  The "early-edge sample on the adjacent pad" would frequently be a sample
+  from a pad ~126 mm away. Baseline is NL off; revisit only at large angles
+  *and* with the mapping revision confirmed.
 - **6-bit fast ADC**: trigger-path feature, not a waveform; ignore.
 - **Full waveform readout**: not an option for P2 streaming; an APV/SRS
   parallel readout on a *prototype* remains the diagnostic fallback if we

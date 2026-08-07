@@ -45,6 +45,14 @@ M. Boonekamp et al.). ✅
   front-end (62 fC–2 pC range, sub-2.5 ns timing, expected signal ~21 fC,
   pad capacitance 75–170 pF); size-1 prototype tested at CERN SPS H4; first
   beam test at MAMI 06/2023. ✅ (MPGD 2026; P2 site; Baunack talk)
+  - ⚠️ **"sub-2.5 ns timing" is the *front-end* figure, not the detector
+    time resolution.** Our prediction for a pad *hit* is **σ_t ≈ 10–13 ns
+    (argon mixtures) / 15–25 ns (neon mixtures)**, set by primary-ionization
+    statistics as σ_t ≈ (1.0–1.5)/(n_p·v_d); the electronics terms (ENC
+    jitter, TAC quantization) add < 3 ns in quadrature. The two numbers are
+    not in conflict, but they must not be quoted interchangeably — and any
+    coincidence-window or rate argument has to use the detector number.
+    See `research/TIME_RESOLUTION_NOTES.md`.
 - **Requirements** (ANR project BASKET-P2, ANR-23-CE31-0025): ±1° scattering
   angle, **2% momentum resolution**, 100 MHz readout, ~10¹⁴ events in ~1000 h.
   ✅ [ANR page](https://anr.fr/Projet-ANR-23-CE31-0025)

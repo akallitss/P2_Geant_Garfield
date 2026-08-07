@@ -44,7 +44,11 @@ class VMMConfig:
     enc_electrons: float = 0.0         # Gaussian noise added to amplitude;
                                        # 0 = noiseless. (NEEDS-DATA: ENC at
                                        # 75-170 pF pad capacitance)
-    neighbor_logic: bool = True        # VMM3a NL; Athena sim default is off
+    # VMM3a neighbor logic. Default OFF: P2 does not plan to run with NL, and
+    # on this pad plane NL reads *chip-channel* neighbors, which are only
+    # partly the physical pad neighbors (vmm/nl_map.py, README §3.1). Turn on
+    # only as a scan variant, with a channel-based neighbor map.
+    neighbor_logic: bool = False
     nl_readout_threshold_electrons: float = 1.0  # Athena: NL strips re-run
                                                  # with threshold 1 e-
     # acceptance window for peak/threshold time (Athena: -12.5 .. +187.5 ns
@@ -89,10 +93,18 @@ class PadHit:
 
 # Input: {pad_id: (times_ns, charges_electrons)} for one event.
 PadPulses = Dict[int, Tuple[Sequence[float], Sequence[float]]]
-# Pad adjacency: pad_id -> iterable of neighbor pad ids. For P2 use ring/phi
-# neighbors from scripts/gerber/analyze_p2_readout.py (NOTE: VMM NL acts on
-# *channel* neighbors within a chip, which after connector mapping are not
-# necessarily geometric pad neighbors — see README §6).
+# Pad adjacency: pad_id -> iterable of neighbor pad ids.
+#
+# For NEIGHBOR LOGIC this must be the *channel* neighbor set — VMM NL fires on
+# chan +-1 within a chip, and on the P2 pad plane those are only partly the
+# physical pad neighbors (74 % touching, 25 % of the true neighborhood, in the
+# 9-column mapping revision; 8 % / 3 % in the 7-column one). Use
+# `vmm.nl_map.PadMap.channel_neighbors`. Passing geometric neighbors here
+# models a detector we do not have.
+#
+# For CLUSTERING of pads that each passed threshold, use the geometric
+# neighbors (`PadMap.geometric_neighbors`) — that is a separate, offline step
+# and is unaffected by the NL setting.
 NeighborMap = Callable[[int], Sequence[int]]
 
 

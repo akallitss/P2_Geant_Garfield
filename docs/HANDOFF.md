@@ -19,6 +19,22 @@
 >    (`vmm/README.md`: model, verified chip facts, Stage-B interface,
 >    NEEDS-DATA questions for BASKET). ATLAS Athena reference sources kept
 >    verbatim in `../vmm/reference/`.
+>    **Re-scoped 2026-08-06 for a *pad* detector:** the charge cloud fires
+>    **~1.1 pads**, so clustering is a ~10 % minority effect, and **neighbor
+>    logic is off in the baseline** — NL fires on *chip-channel* neighbors,
+>    which on this pad plane are physical neighbors 73.8 % of the time in the
+>    9-column mapping revision and **7.7 %** in the 7-column one (median
+>    partner distance 11.9 mm vs **126 mm**); P(the charge-sharing partner is
+>    in the NL set) = 36 % / 2 %. Reproduce: `python3 vmm/nl_map.py`.
+>    Clustering is now an offline step on *geometric* adjacency, kept
+>    separate in the code.
+>    **Time resolution is now a deliverable** (Dylan: we want to compare with
+>    SPS): `vmm/time_resolution.py` +
+>    `research/TIME_RESOLUTION_NOTES.md` predict **σ_t ≈ 10–13 ns (Ar mixes)
+>    / 15–25 ns (Ne mixes)** per pad hit, walk-corrected — dominated by
+>    primary-ionization statistics, σ_t ≈ (1.0–1.5)/(n_p·v_d), with the
+>    front-end contributing < 3 ns in quadrature. µTPC is not available to us
+>    at 1.1 pads/hit.
 > 4. **Test beam (added later on 2026-08-05)**: an SPS test with 200 GeV
 >    muons was just taken (data analysis in progress, external). The
 >    comparison plan is **`TESTBEAM_PLAN.md`**: collect as-run conditions,
@@ -177,7 +193,13 @@ Full inventory and provenance in [`design/README.md`](../design/README.md).
 | `gerber_outline.py` | dependency-free RS-274X reader (lines, arcs, flashes, regions, apertures) |
 | `analyze_p2_geometry.py` | dumps outline / copper / drill geometry for any gerber set |
 | `p2_wedge_model.py` | the idealised wedge profile + a figure comparing it to the gerber |
-| `analyze_p2_readout.py` | pad map from the channel-mapping files |
+| `analyze_p2_readout.py` | pad map from the channel-mapping files (also compares the two mapping revisions: same pad plane, different readout order) |
+
+Pad adjacency lives in **`vmm/nl_map.py`** (added 2026-08-06): `PadMap` with
+`channel_neighbors()` — what VMM neighbor logic actually reads, chan ±1 — and
+`geometric_neighbors()` — physically touching pads, for offline clustering.
+They are deliberately separate relations; on this pad plane they mostly do
+not coincide.
 
 ### New — geometry reference (`docs/P2_GEOMETRY.md`)
 
@@ -282,17 +304,34 @@ only the readout PCB and the bulk masks.
 5. **Mesh.** MX17 models 30 µm stainless as a solid slab. For P2 the woven-mesh
    optical transparency matters more; decide whether to keep the solid-slab
    approximation.
-6. **Which pad mapping is current.** `design/mapping/connector_*.txt` and
-   `design/mapping/Mapping/connector_*.txt` agree on the ring structure and on
-   1201 of 1280 pad positions (93.8 %), but differ on the rest and use opposite
-   radial ordering. Ask which one the DAQ uses before trusting per-channel
-   results. `analyze_p2_readout.py` reports this comparison on every run.
+6. **Which pad mapping is current.** *(Restated 2026-08-06 — the earlier
+   "1201 of 1280 positions agree" was a rounding artifact of the comparison,
+   now fixed in `analyze_p2_readout.py`.)* `design/mapping/connector_*.txt`
+   and `design/mapping/Mapping/connector_*.txt` describe the **same 1280 pads
+   at the same positions** (max nearest-pad mismatch 2.5 µm = print
+   precision). What they disagree on is the **channel assignment**: only
+   **11/1280 (connector, channel) pairs land on the same pad**, and the two
+   use opposite radial ordering with different snaking. So geometric
+   pad-level results are safe; anything per-channel is not — neighbor logic
+   (chan ±1 is 12 mm away in one revision, 126 mm in the other), dead-channel
+   masks, per-channel test-beam comparisons. Ask which one the DAQ uses.
+   Both `analyze_p2_readout.py` and `vmm/nl_map.py` report this.
 7. **Beam / source.** What is being simulated — MESA beam electrons at some
    energy, cosmics, a calibration source? This determines whether the P2
    equivalent of `kVacuum` even wants a gun on the axis or off it.
 8. **Pillar treatment.** Pillars occupy 4.8 % of the amplification gap. Either
    ignore them, or fold them into an effective gas density — modelling 41 366
    individual pillars is not worth it.
+   *(Updated 2026-08-06 — superseded in part.)* Pillars are **Dynamask** dry
+   film (ρ ≈ 1.2–1.4 g/cm³, not kapton/FR4), and the MX17 model now places
+   them explicitly, so "modelling them is not worth it" no longer holds for
+   the *dead-spot* question: a drifting electron landing on a pillar is lost
+   and sees no amplification, which is a per-pad efficiency effect, not a
+   density correction. **To-do before any production run: get the Dynamask
+   pillar map from `P2_Basket_Analysis` (or wherever it lives)** so sim and
+   data share one definition — campaign plan **P0.16**, details in
+   `NEEDED_INPUTS.md` addendum. The effective-density treatment stays fine
+   for material budget alone.
 
 ---
 

@@ -51,15 +51,31 @@ When complete: (1) strike the TEMPLATE line above, (2) fill
 | Peaking time [ns] | ⬜ NEEDED | `vmm/` emulator setting |
 | VMM gain [mV/fC] | ⬜ NEEDED | `vmm/` emulator setting |
 | Threshold: DAC value and/or measured fC equivalent | ⬜ NEEDED | `vmm/` emulator setting |
-| Neighbor logic on/off | ⬜ NEEDED | cluster-size comparison validity |
-| **Which pad-mapping revision** (two revisions disagree on 79/1280 pads) | ⬜ NEEDED | resolves campaign risk §10.4 |
+| Neighbor logic on/off | ⬜ NEEDED | cluster-size comparison validity — NL-on and NL-off pad multiplicities are not comparable numbers |
+| **Which pad-mapping revision** — `connector_*.txt` or `Mapping/connector_*.txt`? The two describe the same pad plane (to 2.5 µm) but assign channels to pads in almost entirely different orders (11/1280 agree) | ⬜ NEEDED | resolves campaign risk §10.6; decides what neighbor logic actually reads (a 12 mm neighbor vs a 126 mm one) and every per-channel comparison |
 | DAQ config files archived? where? | ⬜ NEEDED | provenance |
+
+## T0.4b Timing configuration *(added 2026-08-06 — needed for the σ_t comparison)*
+
+We predict a per-pad time resolution of ~10–13 ns in argon mixtures and
+15–25 ns in neon mixtures (`../research/TIME_RESOLUTION_NOTES.md`). None of
+that can be compared with the data without these:
+
+| item | value | consumed by |
+|---|---|---|
+| TDO mode: threshold-crossing time or time-at-peak? (per-chip setting) | ⬜ NEEDED | which quantity the emulator must reproduce — the two differ in walk behaviour and in model risk |
+| TAC ramp used (60 / 100 / 350 / 650 ns) | ⬜ NEEDED | TDO quantization (LSB = ramp/2⁸); only the 650 ns ramp is non-negligible |
+| BC clock frequency and TDO→ns conversion actually applied | ⬜ NEEDED | absolute time scale |
+| Per-channel time offsets / TAC slope calibration: done? | ⬜ NEEDED | an uncalibrated channel spread inflates the pooled σ_t and looks like poor detector resolution |
+| Time-walk correction applied in the analysis? functional form? | ⬜ NEEDED | we predict both raw and walk-corrected σ_t; a σ quoted without this label cannot be compared |
+| Runs at more than one peaking time? | ⬜ NEEDED | σ_t vs t_p and the ballistic-deficit curve, both for free |
 
 ## T0.5 Trigger and reference tracking
 
 | item | value | consumed by |
 |---|---|---|
 | Trigger: scintillators / telescope / self-triggered streaming | ⬜ NEEDED | which efficiency definition is possible |
+| **What defines t = 0, and what is its time resolution?** (scintillator σ_t, telescope, or just the trigger BC — a 25 ns BC used as reference contributes 7.2 ns on its own) | ⬜ NEEDED | σ²_measured = σ²_pad + σ²_ref; without σ_ref the detector time resolution cannot be extracted at all |
 | Reference tracker: type, resolution, geometry vs DUT | ⬜ NEEDED | efficiency + residual analyses |
 | Other detectors in the stack (multiple wedges? order, spacing) | ⬜ NEEDED | layer-tag efficiency option |
 

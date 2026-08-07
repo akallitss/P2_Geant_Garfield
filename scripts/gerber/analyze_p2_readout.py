@@ -106,14 +106,34 @@ def main():
     b = load(with_xy=False)
     if len(b):
         report(b, "design/mapping/connector_*.txt  (7-column, has AbsIndex)")
-        # do the two revisions describe the same pads?
-        ka = {(round(x, 2), round(y, 2)) for x, y in zip(a["x"], a["y"])}
-        kb = {(round(x, 2), round(y, 2)) for x, y in zip(b["x"], b["y"])}
-        print(f"\n  positions common to both files: {len(ka & kb)} / "
-              f"{len(ka)}  ({100*len(ka & kb)/max(1,len(ka)):.1f}%)")
-        if len(ka & kb) < len(ka):
-            print("  NOTE: the two mapping revisions are NOT the same pad set --"
-                  " check which one the DAQ actually uses.")
+        # Do the two revisions describe the same pads? Match by nearest
+        # neighbour, NOT by rounded coordinates: the 7-column file has no X/Y,
+        # so x,y are recomputed from r,phi and differ from the printed 9-column
+        # values in the last digit. (An earlier rounded-key comparison here
+        # reported a spurious "79/1280 pads disagree", which propagated into
+        # the campaign docs as a risk item -- the pad planes are identical.)
+        PA = np.c_[a["x"], a["y"]]
+        PB = np.c_[b["x"], b["y"]]
+        dmin = np.sqrt(((PA[:, None, :] - PB[None, :, :]) ** 2).sum(-1)).min(axis=1)
+        n_off = int((dmin > 0.01).sum())
+        print(f"\n  pad POSITIONS: max nearest-pad mismatch "
+              f"{dmin.max()*1000:.1f} um; {n_off}/{len(a)} pads off by >10 um")
+        if n_off == 0:
+            print("  => the two revisions describe the SAME pad plane.")
+
+        # ... but do they assign the same channel to the same pad?
+        ib = {(int(c), int(ch)): i for i, (c, ch) in enumerate(zip(b["conn"], b["chan"]))}
+        same = sum(1 for j, (c, ch) in enumerate(zip(a["conn"], a["chan"]))
+                   if (int(c), int(ch)) in ib
+                   and abs(b["r"][ib[(int(c), int(ch))]] - a["r"][j]) < 0.01
+                   and abs(b["phi"][ib[(int(c), int(ch))]] - a["phi"][j]) < 1e-4)
+        print(f"  pad CHANNEL ASSIGNMENT: (connector, channel) -> same pad for "
+              f"{same}/{len(a)} channels ({100*same/len(a):.1f}%)")
+        if same < len(a):
+            print("  NOTE: the revisions disagree on the READOUT ORDER, not the\n"
+                  "  geometry. Everything channel-level -- VMM neighbour logic,\n"
+                  "  dead-channel masks, per-channel test-beam comparisons --\n"
+                  "  depends on which one the DAQ uses. See vmm/nl_map.py.")
 
     if args.plot:
         import matplotlib

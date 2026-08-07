@@ -4,6 +4,24 @@ Geant4 simulation of the P2 wedge Micromegas detector (MESA / Mainz).
 
 > **Read [`docs/HANDOFF.md`](docs/HANDOFF.md) first.**
 >
+> **Update 2026-08-06: VMM analysis re-scoped for a *pad* detector, and a
+> first time-resolution prediction exists.** The charge cloud fires **~1.1
+> pads on average**, so inter-pad clustering is a ~10 % minority effect;
+> **VMM neighbor logic** — a strip-detector feature — reads *chip-channel*
+> neighbors, which on this pad plane are physical neighbors only 74 % of the
+> time in one mapping revision and **7.7 %** in the other (median partner
+> distance 12 mm vs **126 mm**). Baseline is therefore **NL off**, with
+> clustering done offline on geometric adjacency
+> ([`vmm/nl_map.py`](vmm/nl_map.py)). Separately, we now predict a per-pad
+> time resolution of **≈ 10–13 ns (Ar mixes) / 15–25 ns (Ne mixes)**,
+> dominated entirely by primary-ionization statistics — the number to compare
+> against the SPS run
+> ([`docs/research/TIME_RESOLUTION_NOTES.md`](docs/research/TIME_RESOLUTION_NOTES.md),
+> [`vmm/time_resolution.py`](vmm/time_resolution.py)). Also corrected: the
+> "two mapping revisions disagree on 79/1280 pads" claim was a rounding
+> artifact — the pad planes are identical to 2.5 µm; the revisions disagree
+> on the **readout order** (11/1280 channels agree), which is what matters.
+>
 > **Update 2026-08-05 (night): it builds and runs.** First working P2
 > simulation on lxplus — geometry passes overlap checks, and three bugs were
 > fixed getting there (two fatal: self-intersecting `WedgeOutline` polygons
@@ -67,12 +85,12 @@ Geant4 simulation of the P2 wedge Micromegas detector (MESA / Mainz).
 | `mm_sim.cc`, `src/`, `include/` | Geant4 application — `p2` mode (default) + inherited MX17 modes |
 | `scripts/model/` | Python mirror of the P2 geometry + figure generation |
 | `docs/SIM_CAMPAIGN_PLAN.md` | **THE campaign plan**: phases P0–4, run matrices, gas list, chain architecture, bookkeeping |
-| `docs/research/` | sourced research notes: `TOOLCHAIN_NOTES.md` (Geant4/Garfield++/Magboltz/Heed/VMM), `GAS_NOTES.md` (Ne mixtures, flammability, procurement), **`PHOTON_DISCRIMINATION_NOTES.md` (50–100 keV cross-sections, edep discrimination, wall-conversion floor, edep→ADC proportionality)**, `TIMING_PSD_NOTES.md` (time-structure handle) |
+| `docs/research/` | sourced research notes: `TOOLCHAIN_NOTES.md` (Geant4/Garfield++/Magboltz/Heed/VMM), `GAS_NOTES.md` (Ne mixtures, flammability, procurement), **`PHOTON_DISCRIMINATION_NOTES.md` (50–100 keV cross-sections, edep discrimination, wall-conversion floor, edep→ADC proportionality)**, `TIMING_PSD_NOTES.md` (time-structure handle), **`TIME_RESOLUTION_NOTES.md` (predicted σ_t per pad, contribution budget, SPS comparison protocol)** |
 | `scripts/photon_budget.py` | analytic photon-interaction budget — the numbers the Geant4 photon runs must reproduce |
 | `docs/NEEDED_INPUTS.md` | **register of what we are guessing** — spatial/angular distributions, spectra, geometry, noise |
 | `docs/BENCHMARKS.md` | measured speed on lxplus + campaign cost estimate |
 | `docs/OUTPUT_FORMAT.md` | ROOT/CSV schema: EventTree, ClusterTree provenance, VolumeTree |
-| `vmm/` | **VMM3a electronics emulator** (Athena shaper port + pad digitizer, unit-tested) — see `vmm/README.md` |
+| `vmm/` | **VMM3a electronics emulator** (Athena shaper port + pad digitizer, unit-tested), **pad/channel adjacency map (`nl_map.py`)** and the **time-resolution toy (`time_resolution.py`)** — see `vmm/README.md` |
 | `docs/P2_MODEL.md` | **as-built model, assumptions, open questions** |
 | `docs/P2_EXPERIMENT.md` | P2@MESA / BASKET physics context, kinematics, rates (sourced) |
 | `docs/SIM_CAMPAIGN_BRIEF.md` | campaign handoff snapshot (capabilities/assumptions; plan now in SIM_CAMPAIGN_PLAN.md) |
