@@ -25,12 +25,14 @@
 #include "TROOT.h"
 #endif
 
+#include "GasMixtures.hh"
+
 void PrintUsage() {
     std::cerr << "Usage: mm_sim [options] [macro_file]\n";
     std::cerr << "Options:\n";
-    std::cerr << "  -g <gas>         Gas: ArCF4, ArIso, HeEth, ArCO2, ArCF4Iso, NeIso, NeCF4,\n";
-    std::cerr << "                       ArCF4CO2, PureCF4, PureAr, PureHe, PureNe,\n";
-    std::cerr << "                       PureEthane, PureIso, PureCO2  (default: ArIso)\n";
+    std::cerr << "  -g <gas>         Gas mixture name  (default: ArIso)\n";
+    std::cerr << "                   --list-gases prints the full table with compositions\n";
+    std::cerr << "  --list-gases     List available gas mixtures and exit\n";
     std::cerr << "  -p <particle>    gamma, neutron, electron, positron, proton, muon, muon+,\n";
     std::cerr << "                   pion, alpha, triton  (default: electron)\n";
     std::cerr << "  -e <energy>      Particle energy [MeV]  (default: 155, MESA beam)\n";
@@ -49,6 +51,14 @@ void PrintUsage() {
     std::cerr << "  --bulge-back <mm>   Back window overpressure sag  (default: 5)\n";
     std::cerr << "  --gun-x <mm>        Beam aim x [gerber coords]  (default: 307.4)\n";
     std::cerr << "  --gun-y <mm>        Beam aim y [gerber coords]  (default: 177.5)\n";
+    std::cerr << "  --gun-theta <deg>   Beam tilt from the wedge normal  (default: 0)\n";
+    std::cerr << "  --gun-phi <deg>     Azimuth of the tilt, 0 = toward +x  (default: 0)\n";
+    std::cerr << "                      The beam pivots about (gun-x, gun-y) at the drift\n";
+    std::cerr << "                      mid-plane, so theta does not move the illuminated pads\n";
+    std::cerr << "  --gun-standoff <mm> Aim point to gun, along the beam  (default: 50,\n";
+    std::cerr << "                      raised automatically to clear the window bulge)\n";
+    std::cerr << "  --w-cf4 <eV>        Override CF4's W-value to bracket the 35-52 eV spread;\n";
+    std::cerr << "                      re-derives the mixture W  (default: table value, 34)\n";
     std::cerr << "  --spectrum <csv> Sample energies from Sr-90/Y-90 CSV (lscalib/backscintcalib)\n";
     std::cerr << "  --src-dist <mm>  Source-to-detector air gap [mm] (default: 100)\n";
     std::cerr << "  -a <mm>          Al shielding [mm], vacuum mode only  (default: 0)\n";
@@ -109,8 +119,27 @@ int main(int argc, char** argv) {
         else if (arg == "--bulge-back"  && i+1<argc) config.p2_bulge_back_mm  = std::stod(argv[++i]);
         else if (arg == "--gun-x"       && i+1<argc) config.p2_gun_x_mm       = std::stod(argv[++i]);
         else if (arg == "--gun-y"       && i+1<argc) config.p2_gun_y_mm       = std::stod(argv[++i]);
+        else if (arg == "--gun-theta"   && i+1<argc) config.p2_gun_theta_deg  = std::stod(argv[++i]);
+        else if (arg == "--gun-phi"     && i+1<argc) config.p2_gun_phi_deg    = std::stod(argv[++i]);
+        else if (arg == "--gun-standoff"&& i+1<argc) config.p2_gun_standoff_mm= std::stod(argv[++i]);
+        else if (arg == "--w-cf4"       && i+1<argc) config.w_cf4_eV          = std::stod(argv[++i]);
+        else if (arg == "--list-gases") { std::cout << gas::ListMixtures(); return 0; }
         else if (arg[0] != '-') macroFile = arg;
         else { std::cerr << "Unknown option: " << arg << "\n"; PrintUsage(); return 1; }
+    }
+
+    // Validate here, not deep inside the run manager. An unknown gas or
+    // particle used to surface as an uncaught std::runtime_error thrown from
+    // PrimaryGeneratorAction's constructor on a worker thread, i.e. a core
+    // dump after the full geometry had already been built and printed.
+    if (!gas::Exists(config.gas)) {
+        std::cerr << "Unknown gas: " << config.gas << "\n" << gas::ListMixtures();
+        return 1;
+    }
+    if (config.p2_gun_theta_deg < 0.0 || config.p2_gun_theta_deg >= 90.0) {
+        std::cerr << "--gun-theta must be in [0, 90) deg, got "
+                  << config.p2_gun_theta_deg << "\n";
+        return 1;
     }
 
 #ifdef USE_ROOT
@@ -135,7 +164,12 @@ int main(int argc, char** argv) {
                            config.mode == SimMode::kLSCalib         ? "ls-calibration"      :
                            config.mode == SimMode::kBackScintCalib  ? "backscint-calibration": "vacuum");
     std::cout << "  Mode           : " << modeStr << "\n";
-    std::cout << "  Gas            : " << config.gas << "\n";
+    const gas::Mixture& mix = gas::Find(config.gas);
+    std::cout << "  Gas            : " << config.gas << "  (" << mix.label
+              << ", W = " << gas::MixtureWValue(mix, config.w_cf4_eV)
+              << " eV)\n";
+    if (!mix.note.empty())
+        std::cout << "                   note: " << mix.note << "\n";
     std::cout << "  Particle       : " << config.particle << "\n";
     std::cout << "  Energy         : " << config.energy/MeV << " MeV" << "\n";
     std::cout << "  Events         : " << config.nEvents << "\n";
@@ -147,6 +181,8 @@ int main(int argc, char** argv) {
         std::cout << "  Amp gap        : " << config.p2_amp_um << " um\n";
         std::cout << "  Gun aim (x,y)  : (" << config.p2_gun_x_mm << ", "
                   << config.p2_gun_y_mm << ") mm\n";
+        std::cout << "  Gun angle      : theta " << config.p2_gun_theta_deg
+                  << " deg, phi " << config.p2_gun_phi_deg << " deg\n";
     } else if (config.mode == SimMode::kVacuum)
         std::cout << "  Al shielding   : " << config.alThickness_mm << " mm\n";
     else

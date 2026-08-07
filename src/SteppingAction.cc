@@ -18,33 +18,21 @@
 #include "G4VProcess.hh"
 #include "Randomize.hh"
 
+#include "GasMixtures.hh"
+
 #include <cmath>
 
-const std::map<std::string, double> SteppingAction::kWValues = {
-    {"ArCF4",    34.0},
-    {"HeEth",    27.0},
-    {"ArCO2",    27.0},
-    {"ArCF4Iso", 33.0},
-    {"NeIso",    27.0},
-    {"NeCF4",    30.0},
-    {"ArCF4CO2", 34.0},
-    {"ArIso",    26.0},
-    {"PureCF4",  34.0},
-    {"PureAr",   26.4},
-    {"PureHe",   41.3},
-    {"PureNe",   36.4},
-    {"PureEthane",26.0},
-    {"PureIso",  26.0},
-    {"PureCO2",  33.0},
-};
-
 SteppingAction::SteppingAction(const SimConfig& cfg, EventAction* eventAction)
-    : G4UserSteppingAction(), fConfig(cfg), fEventAction(eventAction) {}
-
-double SteppingAction::GetWValue(const std::string& gas) const {
-    auto it = kWValues.find(gas);
-    return (it != kWValues.end()) ? it->second : 26.4;
+    : G4UserSteppingAction(), fConfig(cfg), fEventAction(eventAction) {
+    // Resolved once, not per step: this used to be a hardcoded map keyed by
+    // the same gas name DetectorConstruction used to build the material, with
+    // nothing checking the two agreed. It now comes from the same table the
+    // material is built from (include/GasMixtures.hh), so a mixture cannot
+    // have one composition and an unrelated W.
+    fWValue = gas::MixtureWValue(cfg.gas, cfg.w_cf4_eV);
 }
+
+double SteppingAction::GetWValue(const std::string&) const { return fWValue; }
 
 // Named sums for the P2 stack, carved out of the generic edepByVolume map.
 // Only the p2-mode volume names appear here; other modes fall through

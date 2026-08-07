@@ -32,6 +32,13 @@ struct SimConfig {
     // reported so normalization stays correct.
     bool        skipEmpty = false;
 
+    // CF4's W-value is quoted anywhere between 35 and 52 eV, which is a
+    // genuine systematic rather than a measurement to look up. Overriding the
+    // component value here re-derives the mixture W, so the two ends can be
+    // bracketed as run points (SIM_CAMPAIGN_PLAN P0.2). <= 0 keeps the table
+    // default. Only affects mixtures containing CF4.
+    double      w_cf4_eV = -1.0;
+
     // ── P2 wedge mode ─────────────────────────────────────────────────────
     // Values marked GUESS are not backed by design data — see docs/P2_MODEL.md
     // for the full assumptions table and what to confirm with the collaboration.
@@ -62,6 +69,18 @@ struct SimConfig {
                                        //   scripts/gerber/analyze_cu_coverage.py
     double p2_gun_x_mm       = 307.4;  // gun aim point: r=355 mm, phi=30 deg
     double p2_gun_y_mm       = 177.5;  //   (mid-active-area; apex/beam axis is x=y=0)
+    // Beam tilt (P0.3). theta is measured from the wedge normal (+z), phi is
+    // the azimuth of the tilt in the wedge plane: phi=0 tilts toward +x, 90
+    // toward +y. The beam always passes through the aim point (gun-x, gun-y)
+    // at the DRIFT MID-PLANE, so changing theta rotates the track about that
+    // point instead of sliding the illuminated pads across the wedge.
+    // Campaign scans theta in 0,10,20,30,40 deg (SIM_CAMPAIGN_PLAN 4.1).
+    double p2_gun_theta_deg  = 0.0;
+    double p2_gun_phi_deg    = 0.0;
+    // Distance from the aim point back to the gun, along the beam direction.
+    // Must clear the front window bulge at any theta; the default is checked
+    // against the built geometry at run time.
+    double p2_gun_standoff_mm = 50.0;
 
     // ── Spectrum sampling (kLSCalib / kBackScintCalib) ────────────────────
     // When non-empty, PrimaryGeneratorAction samples electron energies from

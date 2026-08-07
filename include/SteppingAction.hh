@@ -22,8 +22,10 @@ public:
     void UserSteppingAction(const G4Step* step) override;
 
 private:
-    // W-value (mean energy per ion pair) for each gas [eV]
-    // These are well-measured values from literature
+    // W-value (mean energy per ion pair) [eV] for the configured mixture,
+    // resolved from gas::MixtureWValue at construction. See GasMixtures.cc
+    // for the weighting and for the Penning-transfer caveat that makes every
+    // neon-mixture value an upper bound.
     double GetWValue(const std::string& gas) const;
 
     // Named P2-stack sums, carved out of the generic per-volume map.
@@ -33,6 +35,5 @@ private:
     const SimConfig& fConfig;
     EventAction*     fEventAction;
 
-    // W-value lookup
-    static const std::map<std::string, double> kWValues;
+    double fWValue = 26.4;   // eV, resolved once in the constructor
 };

@@ -23,6 +23,8 @@ public:
     G4double         GetHe3GasCenterZ() const { return fHe3GasCenterZ; }
     // Upstream-most z of the P2 stack (front window bulge apex), kP2Wedge mode.
     G4double         GetP2FrontZ()      const { return fP2FrontZ; }
+    // Drift-gap mid-plane z — the aim point the angled gun pivots about.
+    G4double         GetP2DriftCenterZ() const { return fP2DriftCenterZ; }
 
 private:
     void DefineMaterials();
@@ -35,8 +37,9 @@ private:
     G4LogicalVolume* fHe3GasLV     = nullptr;
     G4LogicalVolume* fBackScintLV  = nullptr;  // back plastic scintillator bar (kLSCalib)
 
-    G4double fHe3GasCenterZ = 0.0;
-    G4double fP2FrontZ      = 0.0;
+    G4double fHe3GasCenterZ  = 0.0;
+    G4double fP2FrontZ       = 0.0;
+    G4double fP2DriftCenterZ = 0.0;
 
     std::map<std::string, G4Material*> fGasMaterials;
 };

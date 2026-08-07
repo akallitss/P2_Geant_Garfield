@@ -15,6 +15,7 @@
 #include "Randomize.hh"
 
 #include <algorithm>
+#include <cmath>
 #include <fstream>
 #include <numeric>
 #include <sstream>
@@ -65,12 +66,41 @@ PrimaryGeneratorAction::PrimaryGeneratorAction(const SimConfig& cfg,
         gunZ = fDetCon->GetHe3GasCenterZ();
 
     if (cfg.mode == SimMode::kP2Wedge) {
-        // World x/y are gerber coordinates (apex = beam axis at 0,0); aim the
-        // pencil beam at a configurable point on the wedge, 5 cm upstream of
-        // the bulged front window.
-        gunX = cfg.p2_gun_x_mm * mm;
-        gunY = cfg.p2_gun_y_mm * mm;
-        gunZ = (fDetCon ? fDetCon->GetP2FrontZ() : -11.0*mm) - 5.0*cm;
+        // World x/y are gerber coordinates (apex = beam axis at 0,0). The beam
+        // passes through the aim point at the drift mid-plane and is tilted by
+        // theta from the wedge normal, so an angle scan re-illuminates the same
+        // pads instead of walking across the plane (P0.3).
+        const G4double th  = cfg.p2_gun_theta_deg * deg;
+        const G4double ph  = cfg.p2_gun_phi_deg   * deg;
+        const G4ThreeVector dir(std::sin(th)*std::cos(ph),
+                                std::sin(th)*std::sin(ph),
+                                std::cos(th));
+
+        const G4double aimZ = fDetCon ? fDetCon->GetP2DriftCenterZ() : 0.0;
+        const G4ThreeVector aim(cfg.p2_gun_x_mm * mm,
+                                cfg.p2_gun_y_mm * mm,
+                                aimZ);
+
+        // Back-track along the beam to the gun. The standoff must clear the
+        // front window bulge, which reaches GetP2FrontZ upstream of the window
+        // plane; at large theta the beam also has to clear it laterally, so
+        // require the gun to sit upstream of the bulge apex with margin.
+        G4double standoff = cfg.p2_gun_standoff_mm * mm;
+        if (fDetCon) {
+            const G4double frontZ  = fDetCon->GetP2FrontZ();   // negative
+            const G4double needed  = (aimZ - frontZ + 10.0*mm) / std::cos(th);
+            if (standoff < needed) {
+                G4cout << "PrimaryGeneratorAction: raising gun standoff "
+                       << standoff/mm << " -> " << needed/mm
+                       << " mm to clear the front window at theta = "
+                       << cfg.p2_gun_theta_deg << " deg" << G4endl;
+                standoff = needed;
+            }
+        }
+
+        const G4ThreeVector pos = aim - standoff * dir;
+        gunX = pos.x(); gunY = pos.y(); gunZ = pos.z();
+        fGun->SetParticleMomentumDirection(dir);
     }
 
     fGun->SetParticlePosition(G4ThreeVector(gunX, gunY, gunZ));

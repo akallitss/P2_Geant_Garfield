@@ -35,6 +35,7 @@
 
 #include "SensitiveDetector.hh"
 #include "P2Wedge.hh"
+#include "GasMixtures.hh"
 
 #include <stdexcept>
 #include <vector>
@@ -92,6 +93,15 @@ void DetectorConstruction::DefineMaterials() {
     ethane->AddElement(elC, 2);
     ethane->AddElement(elH, 6);
 
+    G4Material* methane = new G4Material("Methane", idealRho(16.0425)*g/cm3, 2,
+                                          kStateGas, kGasT, kGasP);
+    methane->AddElement(elC, 1);
+    methane->AddElement(elH, 4);
+
+    G4Material* nitrogen = new G4Material("N2_gas", idealRho(28.0134)*g/cm3, 1,
+                                           kStateGas, kGasT, kGasP);
+    nitrogen->AddElement(elN, 2);
+
     G4Material* CO2 = new G4Material("CO2_gas", idealRho(44.0095)*g/cm3, 2,
                                       kStateGas, kGasT, kGasP);
     CO2->AddElement(elC, 1);
@@ -116,6 +126,10 @@ void DetectorConstruction::DefineMaterials() {
 
     // ── Gas mixtures ─────────────────────────────────────────
     //
+    // Composition now comes from gas::All() (include/GasMixtures.hh), which
+    // is also what SteppingAction reads its W-value from and what the run
+    // metadata records. Nothing about a mixture is written down twice.
+    //
     // Mixtures are specified by VOLUME fraction, which is how gas systems are
     // actually mixed and how every mixture in the literature is quoted.
     //
@@ -131,47 +145,35 @@ void DetectorConstruction::DefineMaterials() {
     // T and P the partial densities add, so
     //     rho_mix     = sum_i f_vol_i * rho_i
     //     f_mass_i    = f_vol_i * rho_i / rho_mix
-    auto makeMixV = [&](const char* nm,
-                        std::vector<std::pair<G4Material*, G4double>> comps)
-                        -> G4Material* {
-        G4double fsum = 0.0, rho = 0.0;
-        for (const auto& c : comps) {
-            fsum += c.second;
-            rho  += c.second * c.first->GetDensity();
-        }
-        if (std::abs(fsum - 1.0) > 1e-6)
-            throw std::runtime_error(std::string("Gas ") + nm +
-                                     ": volume fractions must sum to 1");
-        auto* m = new G4Material(nm, rho, static_cast<G4int>(comps.size()),
-                                 kStateGas, kGasT, kGasP);
-        for (const auto& c : comps)
-            m->AddMaterial(c.first, c.second * c.first->GetDensity() / rho);
-        return m;
+    std::map<std::string, G4Material*> pure = {
+        {"Ar",     purAr},
+        {"Ne",     pureNe},
+        {"He",     pureHe},
+        {"CO2",    CO2},
+        {"CF4",    CF4},
+        {"CH4",    methane},
+        {"C2H6",   ethane},
+        {"iC4H10", isobutane},
+        {"N2",     nitrogen},
     };
 
-    fGasMaterials["ArCF4"]    = makeMixV("ArCF4",    {{purAr,0.90}, {CF4,0.10}});
-    fGasMaterials["HeEth"]    = makeMixV("HeEth",    {{pureHe,0.965}, {ethane,0.035}});
-    fGasMaterials["ArCO2"]    = makeMixV("ArCO2",    {{purAr,0.70}, {CO2,0.30}});
-    fGasMaterials["ArIso"]    = makeMixV("ArIso",    {{purAr,0.95}, {isobutane,0.05}});
-    fGasMaterials["NeIso"]    = makeMixV("NeIso",    {{pureNe,0.95}, {isobutane,0.05}});
-    fGasMaterials["NeCF4"]    = makeMixV("NeCF4",    {{pureNe,0.90}, {CF4,0.10}});
-    fGasMaterials["ArCF4Iso"] = makeMixV("ArCF4Iso", {{purAr,0.88}, {CF4,0.10},
-                                                      {isobutane,0.02}});
-    fGasMaterials["ArCF4CO2"] = makeMixV("ArCF4CO2", {{purAr,0.45}, {CF4,0.40},
-                                                      {CO2,0.15}});
-
-    {
-        auto* m = new G4Material("PureCF4", idealRho(88.0043)*g/cm3, 2,
-                                  kStateGas, kGasT, kGasP);
-        m->AddElement(elC,1); m->AddElement(elF,4);
-        fGasMaterials["PureCF4"] = m;
+    for (const auto& mix : gas::All()) {
+        // A single-component "mixture" is the pure gas itself; G4Material
+        // refuses a one-component AddMaterial fraction of 1 in some builds,
+        // and there is nothing to mix anyway.
+        if (mix.parts.size() == 1) {
+            fGasMaterials[mix.name] = pure.at(mix.parts[0].component);
+            continue;
+        }
+        const G4double rho = gas::MixtureDensity(mix) * g/cm3;
+        auto* m = new G4Material(mix.name, rho,
+                                 static_cast<G4int>(mix.parts.size()),
+                                 kStateGas, kGasT, kGasP);
+        for (std::size_t i = 0; i < mix.parts.size(); ++i)
+            m->AddMaterial(pure.at(mix.parts[i].component),
+                           gas::MassFraction(mix, i));
+        fGasMaterials[mix.name] = m;
     }
-    fGasMaterials["PureAr"]     = purAr;
-    fGasMaterials["PureHe"]     = pureHe;
-    fGasMaterials["PureNe"]     = pureNe;
-    fGasMaterials["PureEthane"] = ethane;
-    fGasMaterials["PureIso"]    = isobutane;
-    fGasMaterials["PureCO2"]    = CO2;
 
     // ── He-3 at 300 bar ──────────────────────────────────────
     {
@@ -220,7 +222,8 @@ void DetectorConstruction::DefineMaterials() {
 G4Material* DetectorConstruction::GetGasMixture(const std::string& name) {
     auto it = fGasMaterials.find(name);
     if (it == fGasMaterials.end())
-        throw std::runtime_error("Unknown gas/material: " + name);
+        throw std::runtime_error("Unknown gas/material: " + name + "\n" +
+                                 gas::ListMixtures());
     return it->second;
 }
 
@@ -916,6 +919,11 @@ G4VPhysicalVolume* DetectorConstruction::ConstructP2() {
     PlaceLayer("DriftCathode_Mylar2",polyOpening, tCathMy,  matMylar, visMylar);
     PlaceLayer("DriftCathode_Al",    polyOpening, tCathAl,  matAl,    visAl);
     G4LogicalVolume* driftLV = nullptr;
+    // zF is the running front face, so the drift mid-plane is fixed before the
+    // call advances it. The angled gun (--gun-theta) aims here rather than at
+    // the window, so a tilted beam illuminates the same pads as a normal one
+    // instead of walking across the plane with theta.
+    fP2DriftCenterZ = zF + tDrift/2;
     PlaceLayer("DriftGas",          polyOpening, tDrift,   matGas,   visDrift, &driftLV);
     fDriftGasLV = driftLV;
     PlaceLayer("Micromesh",         polyOpening, tMesh,    matMesh,  visMesh);
