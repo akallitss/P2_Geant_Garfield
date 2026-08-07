@@ -12,7 +12,18 @@ campaign), `research/TIMING_PSD_NOTES.md` (time-structure discrimination
 blue-sky, 2026-08-05), **`research/PHOTON_DISCRIMINATION_NOTES.md`
 (2026-08-05, late — the 50–100 keV cross-section reality check, the
 energy-deposition discrimination handle, and the wall-conversion floor;
-§0, §1, §3, §4.2, §5, §7 and §10 below are amended from it)**.
+§0, §1, §3, §4.2, §5, §7 and §10 below are amended from it)**,
+**`research/TIME_RESOLUTION_NOTES.md` (2026-08-06 — predicted per-pad σ_t
+and the SPS comparison protocol; §2, §5 step 5, new §5 step 7 and §6 are
+amended from it)**.
+
+> **Amendment 2026-08-06 (Dylan).** Two operating facts now shape the Stage C
+> plan: (1) the charge cloud fires **~1.1 pads on average**, so inter-pad
+> clustering is a ~10 % effect and **VMM neighbor logic — a strip-detector
+> feature whose channel neighbors are not spatial neighbors on this pad
+> plane — is off in the baseline** (§2, `vmm/README.md` §3.1); (2) **VMM
+> time resolution is a headline deliverable**, to be compared against the SPS
+> data (§2, §5 step 7, `research/TIME_RESOLUTION_NOTES.md`).
 
 ---
 
@@ -302,17 +313,57 @@ integrated, so peak ≈ ∝ collected charge) with three required corrections:
 capacitance **75–170 pF** sets the floor (several-thousand-e⁻ ENC → few-fC
 practical thresholds; BASKET expects ~21 fC signals, range 62 fC–2 pC);
 (ii) ballistic-deficit factor if t_p < 150 ns is ever modeled;
-(iii) **neighbor logic** — without it recorded cluster size/charge is
-underestimated, which directly biases the electron-vs-photon topology cut.
+(iii) ~~neighbor logic~~ — **re-scoped 2026-08-06, see below**.
 Also simulate explicitly: **ADC saturation** — at high gas gain a 6–8 keV
 photoabsorption (~250 e⁻ point deposit) can saturate the ~8-bit range while
 MIP pads stay in range; saturation interacts with the discrimination cut.
 Full waveform simulation with the Athena h(t) is Phase 4, needed only for
-µTPC timing, time-walk, or streaming pile-up studies.
+time-walk modeling beyond the (PDO, TDO) pair or streaming pile-up studies.
 **Implementation started (2026-08-05): `vmm/`** — Athena shaper ported to
 Python and unit-tested, channel emulator with T0 (charge+threshold) and T1
 (shaper + neighbor logic + ENC + ADC) tiers, Stage-B interface contract and
 NEEDS-DATA list; see `vmm/README.md`.
+
+**Neighbor logic is a strip feature and mostly does not apply here**
+*(2026-08-06, from Dylan's operating input + `vmm/nl_map.py`)*. Two facts:
+
+- **The charge cloud fires ~1.1 pads on average.** Inter-pad clustering is a
+  ~10 % minority effect — real, and to be used optimally, but not a design
+  driver. It is *not* the multi-strip cluster that NL, µTPC and cluster-size
+  cuts were designed for; anything inherited from ATLAS NSW that assumes a
+  several-channel cluster has to be re-derived, not transplanted.
+- **NL fires on chip-channel neighbors, and on a pad plane those are not
+  spatial neighbors.** Measured over all 1280 pads: in the 9-column mapping
+  revision chan ±1 is a touching pad 73.8 % of the time (median separation
+  11.9 mm) and covers 25 % of the 5.78-pad physical neighborhood; in the
+  7-column revision it is **7.7 %** and **126 mm median** — NL there would
+  triple the data volume reading pads across the wedge. P(the actual
+  charge-sharing partner is in the NL set) = **36 % / 2 %** respectively.
+
+Consequences adopted for the campaign: **baseline is NL off** (the experiment
+does not plan to use it, and the upside is bounded at ~10 % of tracks × 36 %
+coverage ≈ 3–4 % of tracks gaining a partial second pad, against ~3× channel
+occupancy); **clustering is an offline geometric step** on pads that each
+passed threshold, which works with NL off and is where the real inter-pad
+sharing gets used; and if NL is ever enabled it must be simulated in
+*channel* space with the revision stated. Modeling NL as "geometric
+neighbors" — the placeholder in the original plan — simulates a detector we
+do not have and would bias recorded cluster size in both directions.
+
+**Timing is now a Stage C deliverable, not a Phase-4 option** *(2026-08-06 —
+"we are very interested in the time resolution of VMM and would definitely
+want to compare what we get at SPS with simulation")*. First quantitative
+pass done: `vmm/time_resolution.py` +
+`research/TIME_RESOLUTION_NOTES.md`. Predicted per-pad σ_t (3 mm, gain 10⁴,
+2 fC, ENC 3 k e⁻, threshold-crossing timestamp, walk-corrected with the same
+hit's PDO): **10.6 ns Ar/Iso, 12.1 ns Ar/CO₂/Iso, 15.0 ns Ne/Iso 90/10,
+16.2 ns Ne/CH₄, 25.0 ns Ne/CO₂/Iso 95/3/2** at t_p = 100 ns. The result is
+**σ_t ≈ (1.0–1.5)/(n_p·v_d)** — ionization statistics, not electronics:
+ENC jitter, TAC quantization, Polya and diffusion together contribute < 3 ns
+in quadrature. The cost is one toy run per configuration (~1 min), so σ_t
+can be carried through the Phase-3 matrix as a cell value rather than
+computed once. Note **µTPC is unavailable at 1.1 pads/hit** — one timestamp
+per hit, so gas/threshold/peaking time are the only knobs.
 
 ## 3. Phase 0 — preparation (code + infrastructure)
 
@@ -321,22 +372,29 @@ Do now (none of it depends on Alexandra's answers):
 | # | task | notes |
 |---|---|---|
 | P0.1 | **Fix gas mixture composition bug** ✅ **done 2026-08-05** (see `research/GAS_FIX_NOTES.md`) | `makeMix2/3` feeds volume fractions to `AddMaterial()` which takes **mass** fractions. Negligible-ish for Ar/Iso (5 % vol = 7.3 % mass) but fatal for Ne mixes (Ne/Iso 95/5 vol = 86.5/13.5 by mass). Rewrite builder to take vol% + component molar masses → mass fractions; recompute densities from ideal-gas mixing. Also verify the 2.67e-3 g/cm³ isobutane density (ideal-gas at 20 °C gives 2.42e-3). |
-| P0.2 | **Add campaign gases + W values** | the §7.4 list: Ar/CO₂/Iso 93/5/2; Ne/Iso 90/10, 80/20; Ne/CO₂/Iso 95/3/2; Ne/Iso/CO₂ 90/5/5; Ne/CH₄ 93/7; Ne/C₂H₆ 90/10 (+ Ne/CO₂/N₂ 90/10/5 optional); recompute all W-values as harmonic vol-weighted mixes; document each. CF₄ W spread (35–52 eV) → parameterize, don't hardcode. |
-| P0.3 | **Gun angle control** | `--gun-theta` (deg from wedge normal), `--gun-phi` (tilt azimuth), keeping the aim point on the wedge fixed; optional `--beam-spread` later. |
+| P0.2 | **Add campaign gases + W values** ✅ **done 2026-08-07** | All seven §7.4 mixtures are built and run: `ArCO2Iso9352`, `NeIso9010`, `NeIso8020`, `NeCO2Iso9532`, `NeIsoCO29055`, `NeCH4937`, `NeC2H69010` (+ `ArIso`). Composition, density, mass fractions and W now come from **one table** (`include/GasMixtures.hh`) instead of a composition list in `DetectorConstruction` and an unrelated hand-maintained W map in `SteppingAction` — the two used to be keyed by the same string with nothing checking they agreed, i.e. the same class of error as the 2026-08-05 mass/volume-fraction bug. `mm_sim --list-gases` prints the table; an unknown gas now fails at argument parsing with the list rather than core-dumping after geometry construction. **Three deviations from this task as written:** (i) mixture W is **stopping-power weighted**, not the harmonic *volume* weighting specified here — the correct weight is the energy fraction each species absorbs, which scales with molecular electron count, and the two differ by ~7 % for Ne/iC₄H₁₀ 90/10; (ii) CF₄'s W is a CLI parameter (`--w-cf4`) so the 35–52 eV spread is bracketed as run points rather than hardcoded, as asked; (iii) **Ne/CO₂/N₂ 90/10/5 was not added — those fractions sum to 105 %.** Someone needs to say what the intended mixture is before it can be built. |
+| P0.2c | ⬜ **Re-source the pure-gas W values against PDG** *(new 2026-08-07)* | The component W table in `src/GasMixtures.cc` is inherited from the old `SteppingAction` map and has **not** been checked against a primary source. Isobutane is carried at 26.0 eV where the commonly quoted value is nearer 23.4 eV — a 10 % shift that would propagate into every `nPrimary` in every argon run. Deliberately left unchanged rather than silently moved, so previously produced numbers stay explicable. Cheap; do it before Phase 2 and record a source per component. Note the ordering: this matters *less* than Penning transfer, which is not modelled at all and makes every Ne-mixture W an upper bound. |
+| P0.3 | **Gun angle control** ✅ **done 2026-08-07** | `--gun-theta` (deg from the wedge normal), `--gun-phi` (tilt azimuth), `--gun-standoff`. The beam **pivots about the aim point at the drift mid-plane**, so an angle scan re-illuminates the same pads instead of walking across the wedge with θ; the standoff auto-raises to clear the front window bulge at large θ. Verified against a 30° run: primary-track slope dx/dz = 0.5779 vs tan 30° = 0.5774, aim point stable to 16 µm. Unblocks the §4.1/§4.2 angle scans. `--beam-spread` still optional/later. |
 | P0.4 | **Cluster provenance in output** ✅ **done 2026-08-05** | per cluster: creator process + logical volume where the depositing track (or its ionizing ancestor) was born. This is what turns photon runs into a per-layer conversion budget. Add per-event "first interaction volume" for γ runs. **Needs a `TrackingAction` + `G4VUserTrackInformation`, neither of which exists in the repo yet** (`ActionInitialization` registers only primary/run/event/stepping) — one-level `parentID` is not enough, since a δ-ray of a photoelectron reads as `eIoni`. Carry {origin process, origin volume, origin energy, ancestor trackID} and copy it to every secondary at creation. |
 | P0.4b | **Gas-crossing track-segment export** | per charged track crossing DriftGas: entry point, direction, momentum, PID (a small `SegmentTree`). This is the Heed handoff for Stage B's high-fidelity mode (re-ionize with `TrackHeed::NewTrack()`), per the Pfeiffer-paper recommended split. Cheap to add now, enables the threshold studies later. |
 | P0.4c | **Exit-particle export** | per event: every particle leaving the wedge envelope (PID, energy, direction, exit surface, creator process + birth volume, ancestry link to the primary). In photon runs this bounds **correlated multi-wheel fakes** (a Compton-scattered 100–150 keV photon keeps most of its energy and can convert again in wheels 2/3 — accidental-rate arithmetic misses this entirely) by pure wheel-to-wheel convolution, no 3-wheel geometry needed yet; it is also the input the eventual full 3-wheel sim (§8) will want. Decision 2026-08-05: save full interaction histories — track everything that produces signal, where it came from, and how it interacted. |
 | P0.5 | **`--skip-empty` output flag** ✅ **done 2026-08-05** | photon runs are ≥99.9 % empty events; write only events with ≥1 cluster (keep the total-thrown count in metadata for normalization). |
 | P0.6 | **PAI model in gas regions + deexcitation** 🟡 **deexcitation + fine-cut region done 2026-08-05; PAI still open** | G4Region over DriftGas+AmpGas with PAI/PAIphot (~2× EM cost, thin-layer straggling fixed); switch physics list to Livermore-class EM with fluorescence/Auger/PIXE on (needed for Cu-K/Fe-K fluorescence in photon runs). CLI switch to compare with default EM (one validation study early in Phase 1). **⚠ Includes a bug fix, do not skip:** `PhysicsList::SetCuts()` sets a **0.1 mm γ production cut**, which in copper is ~5–10 keV — i.e. the **8.05 keV Cu-K fluorescence line is at or below threshold and is probably being suppressed today.** That is the dominant *gas-sensitive* wall channel (§1.1). Set `G4EmParameters::SetDeexcitationIgnoreCut(true)` and add a fine-cut (~1 µm) `G4Region` over mesh + pad Cu + gas; the current 10 µm e⁻ cut is ~1 keV in gas but ~80 keV in Cu. |
-| P0.7 | **Condor scripts refresh** | `submit_condor*.py` still speak MX17 modes; teach them the p2 flags + campaign manifest (one JSON/CSV row per run point). |
+| P0.7 | **Condor scripts refresh** | `submit_condor*.py` still speak MX17 modes; teach them the p2 flags + campaign manifest (one JSON/CSV row per run point). Also `collect_results.py`, which still parses MX17-style `{gas}_{particle}_{E}MeV` filenames and will not recognise the §9 naming scheme. **Half of this got easier on 2026-08-07** — see P0.21: the manifest fields the submit script would have had to record are now written into the ROOT file itself, so the script's job is to schedule and name runs, not to be the sole custodian of what a file is. |
+| P0.21 | **Run provenance inside the output file** ✅ **done 2026-08-07** | New `RunMeta` tree, one row per worker (`hadd` concatenates; `thrown` sums). Carries the **thrown count** — the normalization denominator that previously existed *only* in stdout, making any file separated from its job log unnormalizable and, strictly, unidentifiable — plus the code git hash and a **dirty flag**, a hash + readable digest over every geometry-affecting parameter, the resolved gas composition/density/W, and the full beam configuration. `collect_results.py: read_run_meta()` sums thrown across workers and **warns** when rows disagree on git or geometry hash (an accidental merge across two run points) or when a run came from a dirty tree. This is what makes §9's "no un-manifested runs" enforceable rather than aspirational. Schema documented in `OUTPUT_FORMAT.md` §0. |
 | P0.8 | **First lxplus build + geometry validation** ✅ **done 2026-08-05** | compile, overlap check, 100-event smoke run, one event display. Can be done with provisional geometry — worth doing *before* Alexandra's answers so her changes land in verified code. |
-| P0.9 | **Stage B skeleton** | pad-map loader exists (`analyze_p2_readout.py`); write the drift/gain/pad-summing sampler with pluggable gas tables; unit-test with fake tables so Magboltz becomes a drop-in. |
-| P0.10 | **Magboltz gas tables** | generate on lxplus per gas (log E-grid spanning drift ~100 V/cm–1 kV/cm and amplification ~30–60 kV/cm; ncoll = 10), `WriteGasFile` + ion mobility files, cache in repo or EOS. Order an hour per gas per core; embarrassingly parallel. Garfield++ comes from cvmfs LCG views on lxplus. Enable Penning transfer per §2 (manual r for Ne/iC₄H₁₀ and ternaries — document the chosen value and bracket). |
+| P0.9 | **Stage B skeleton** | pad-map loader exists (`analyze_p2_readout.py`); write the drift/gain/pad-summing sampler with pluggable gas tables; unit-test with fake tables so Magboltz becomes a drop-in. **Lift, do not write fresh** *(MX17, 2026-08-06 — `HANDOFF_MX17_RESPONSE.md` §2.2)*: MX17 is writing the same stage now (Python, numpy/uproot) and the decomposition is identical up to two plug-ins — induction kernel (static Ramo for P2, dynamic resistive templates for MX17) and electronics (VMM vs DREAM). Drift/diffusion/attachment sampling, Polya gain, mesh transparency, packet bookkeeping and the manifest tooling are all detector-agnostic. Take `response/digitizer/` from MX17_Geant when that package is declared stable — the §2.2 note says it was not yet on 2026-08-06, so **check before starting, and check again rather than duplicating a week of work.** |
+| P0.10 | **Magboltz gas tables** | generate on lxplus per gas (log E-grid spanning drift ~100 V/cm–1 kV/cm and amplification ~30–60 kV/cm; ncoll = 10), `WriteGasFile` + ion mobility files, cache in repo or EOS. Order an hour per gas per core; embarrassingly parallel. Garfield++ comes from cvmfs LCG views on lxplus. Enable Penning transfer per §2 (manual r for Ne/iC₄H₁₀ and ternaries — document the chosen value and bracket). **Generate wet variants (0.5/1/2 % H₂O) alongside dry** *(MX17, 2026-08-06 — §2.4)*: MX17's bench finds water contamination dominates drift velocity — 36.6 µm/ns measured against a far higher dry prediction in Ar/iso, 1–2 % H₂O inferred at the SPS. Cheap (same job, one extra component) and it matters directly: σ_t ∝ 1/v_d, so a dry-only table can be optimistic by tens of percent against the SPS data we are trying to match. Quote a dry→2 % bracket rather than a line. |
 | P0.11 | **Source mode** | isotropic point/disc source gun with line energies — ⁵⁵Fe 5.9/6.5 keV, ²⁴¹Am 59.5 keV, ¹⁰⁹Cd 88 keV, ⁵⁷Co 122/136 keV — plus the ⁹⁰Sr/⁹⁰Y β spectrum (CSV already in `sr90_calibration/`); configurable standoff. Powers the §5a source-validation predictions and the ⁵⁵Fe-vs-⁹⁰Sr timing bench test (`research/TIMING_PSD_NOTES.md`). |
 | P0.12 | **Per-event interaction classification + edep by region** ✅ **done 2026-08-05** | the branch that makes the requested money plot a one-liner. Per event: `interactionClass` ∈ {none, gas-photoelectric, gas-Compton, gas-Rayleigh, wall-photoelectric, wall-Compton, fluorescence-reabsorption, MIP-crossing, other}, `conversionVolume`, `conversionZ`, plus **edep in every region, not just DriftGas/AmpGas** — `FrontGas`, `DriftCathode_Gas` and `BackGas` are currently unscored, so "converted somewhere that produces no signal" is indistinguishable from "did not convert". Also record amp-gap cluster z *relative to the mesh* explicitly (Stage B needs it for partial gain, §2). Then "event-by-event edep separated by interaction type" is one `TTree::Draw` per gas. Builds on P0.4's TrackingAction; do them together. |
 | P0.13 | **Cylindrical-wire mesh cross-check** *(downgraded 2026-08-05 — see note)* | the mesh **is** the largest single fake source (measured 1.98×10⁻³ per 60 keV photon, 9× the argon gas rate), but the existing effective-density slab is **not** wrong about the rate: its areal density π·d²/(2·pitch) = 8.46 µm solid-equivalent is *exactly* the plain-weave value (verified). Only the escape geometry is approximate, and the diluted-slab and solid-wire estimates differ by ~1.4×, not 3×. So this is a **cross-check worth doing, not a blocker**. |
 | P0.14 | **Analytic cross-check gate** ✅ **done 2026-08-05** | `scripts/photon_budget.py` reproduces the §1.1 targets; the first Geant4 photon run matched it (3.4×10⁻³ measured vs 4.3×10⁻³ predicted total, mesh dead on). Re-run this comparison after the P0.1 gas-mixture fix, since a mass/volume-fraction error shows up here first. |
 | P0.15 | **Phase-space gun** *(new 2026-08-05, from `NEEDED_INPUTS.md` §1)* | read primaries (position, direction, energy, PID, weight) from a file at the wheel plane instead of the fixed pencil beam, so results can be weighted by the real spatial/angular distribution of signal electrons and background photons. Cheap to write; **blocked on the collaboration supplying the file**, which is the single highest-value external ask we have. |
+| P0.17 | ⬜ **Realistic induced current — static Ramo, not a Phase-4 project** *(promoted out of §8 on 2026-08-07; MX17 §2.1)* | Stage B currently feeds the VMM shaper **delta charges** (Athena's model). The real Micromegas signal is a fast electron spike plus a ~150 ns ion tail, and that shape sets the leading-edge slope — the main model risk in the σ_t prediction and the only reason the time-at-peak estimator is untrustworthy. **P2's stack is non-resistive, so the weighting potential is static**: no time dependence, no FEM, no solver. Riegler's closed-form layered solutions (JINST 11 (2016) P11002) are already in Garfield++ `ComponentParallelPlate` (`AddPixel`/`AddStrip`). Replace each electron's delta charge with `i(t) = Q_e·δ_fast(t) + Q_ion·i_ion(t; µ_ion, gap)` weighted by the pad's Ramo potential. **Effort: an afternoon.** Also retires `MM_ION_FLOW_TIME_NS = 150.0` in `vmm/vmm_shaper.py` — an ATLAS NSW gap/gas constant that should be *dropped* once real induction exists, not retuned. Details: `research/TIME_RESOLUTION_NOTES.md` §4.1. |
+| P0.18 | ⬜ **Zone the readout copper — P2 has this error today** *(new 2026-08-07; MX17 §2.4 / `NEEDED_INPUTS.md`)* | `SimConfig.hh` documents `p2_fcu_coverage`/`p2_bcu_coverage` as measured **over the active area**, but `EffCu` applies them to a copper slab spanning the **whole wedge board** — so the model puts near-solid copper out in the fan-out and periphery, where real coverage is far lower. MX17 had the mirror-image bug (one board-wide average everywhere: 26 % too little copper in the active area, ~10× too much outside) and fixed it with two volumes and no measurable CPU — see `BuildReadoutZone` in `MX17_Geant/shared/MX17ModuleGeometry.hh`. **Why this is not cosmetic:** copper is ~90 % of the photon fake budget in argon (§1.1, and the first Geant4 photon run agreed), so mis-placing it distorts the conversion-layer budget that the entire gas decision rests on. **Needed input:** re-run the coverage script reporting active and outside-active fractions separately — **but fix it first**: `analyze_cu_coverage.py` mis-measures F_Cu because `ApertureDef.size` returns `max(params)`, which for KiCad `RotRect` macro apertures picks up the *rotation angle* (e.g. `RotRect,0.3X1.8X302.763` → "size" 302.763 mm), painting ~151 mm-radius discs at the ten connector footprints; it also counts `NonConductor`/`Profile` apertures as copper. So `p2_fcu_coverage = 0.983` is itself inflated and must not be used as-is (`NEEDED_INPUTS.md`, verified 2026-08-07). |
+| P0.19 | ⬜ **Real pad/strip artwork instead of a homogenized slab** *(new 2026-08-07; MX17 §2.4 item 2)* | If the P2 readout artwork is periodic it can be built as real geometry with nested `G4PVReplica` — MX17's 786 432-feature pattern costs **15 extra volumes and ~3 % CPU**, not 786 432 placements. Only affects backscatter off the board (the signal copper is downstream of both gas gaps), so it ranks below P0.18. **Needed input:** confirm the artwork is periodic. *(In progress in a parallel session as of 2026-08-07: the pad field is reported to be an exactly regular polar grid — 42 rings, 11.4286 mm ring pitch, 1280 annular-sector pads — built via `G4PVReplica` in φ.)* |
+| P0.20 | ⬜ **Resistive layer: confirm it is actually uniform** *(new 2026-08-07; MX17 §2.4 item 3)* | `DetectorConstruction.cc` places `ResistivePaste` as a **100 µm slab of full-density (1.4 g/cm³) paste** over the whole wedge — no coverage scaling, no structure. MX17's is now 515 discrete 550 µm ESL strips on a 0.8 mm pitch with real chamber gas in the grooves. This matters more than the pad pattern: the resist is the first solid the avalanche region sees and at 100 µm it is ~5× a P2 copper layer. **Needed input:** is the P2 resistive layer strips, a uniform DLC/paste sheet, or pads? If uniform, the current slab is right and only thickness/density need confirming — but that should be **stated, not assumed**. |
+| P0.16 | ⬜ **Get the Dynamask pillar map — before any production run** *(new 2026-08-06, Dylan)* | Fetch it from **`P2_Basket_Analysis`** (or wherever it lives) and put pillars in the geometry. We already have the *design* pattern from the CERN bulk mask (`P2_Mask2.gbr`: Ø 0.5 mm, pitch 2.000 mm exact, 41 366 pillars, **4.8 % of the amp gap**) and the material (**Dynamask** dry film, ρ ≈ 1.2–1.4 g/cm³ — not kapton/FR4); what we want is the map the *analysis* actually uses, so sim and data share one definition (same argument as the mapping revision, §10.6). Feeds: pillar dead spots in Stage B (electrons landing on a pillar are lost, no amplification there), the 4.8 % effective-gas correction, material budget. **Gating**: retrofitting pillars after a production run invalidates per-pad efficiency and the amp-gap scoring. Details: `NEEDED_INPUTS.md` addendum. |
 
 Blocked on Alexandra (re-run affected points if answers move defaults): mylar
 thicknesses/aluminisation, back-frame depth, frame opening/material,
@@ -461,15 +519,20 @@ Apply Stage B+C to Phase-1 baseline samples (3 mm, all gases; 119 MeV e⁻ at
    proxy for oblique electrons). Note the discrimination is **topological as
    much as total-charge**: a 6–8 keV fluorescence photoabsorption is a
    point-like ~230–300 e⁻ deposit on 1–2 pads, while a MIP crossing 3 mm
-   leaves ~30–50 e⁻ *spread along the track* — so diffusion, pad sharing and
-   neighbor logic must be modeled honestly, and both per-pad and per-event
+   leaves ~30–50 e⁻ *spread along the track* — so diffusion and pad sharing
+   must be modeled honestly, and both per-pad and per-event
    charge cuts should be scanned. High-energy wall photoelectrons ranging
    through the gas are the hard case (electron-like charge); flag their
    fraction separately. Expectation check (Dylan, 2026-08-05): at 10° a
    track averages only **~1.1 pad hits**, so topology is a *secondary*
    discriminant at the nominal angle — quantify what it adds, but the
    working assumption is charge deposition + 3-layer coincidence carry the
-   weight.
+   weight. *(2026-08-06)* Clustering of the ~10 % of hits that do share
+   charge is an **offline geometric step** (`vmm/nl_map.py`
+   `geometric_neighbors`), run on pads that each passed threshold; the
+   **VMM neighbor logic is off in the baseline** and is a separate,
+   channel-space model (§2). Report pad multiplicity with the NL state
+   stated — the two are not comparable numbers.
    **3a. Edep → charge proportionality audit** *(new 2026-08-05; the "does
    the deposited energy actually become ADC" question, full list in
    `research/PHOTON_DISCRIMINATION_NOTES.md` §5)*. Before any ROC is
@@ -520,7 +583,14 @@ Apply Stage B+C to Phase-1 baseline samples (3 mm, all gases; 119 MeV e⁻ at
    **correlated-fake bound** from the P0.4c exit-particle record
    (Compton punch-through convolved wheel-to-wheel) — accidentals and
    correlated fakes scale differently with the coincidence window, so
-   report both.
+   report both. **The window has a floor set by the per-hit time
+   resolution** *(2026-08-06)*: it cannot be tightened below a few σ_t
+   without losing real triples, and σ_t is 12 ns (Ar mixes) vs 25 ns
+   (Ne/CO₂/Iso) — a 2× difference in window, i.e. **4× in accidental
+   doubles and 8× in triples**, which is larger than the Ar-vs-Ne
+   difference in photon conversion probability. Take σ_t per gas from
+   `research/TIME_RESOLUTION_NOTES.md` §0 and quote the window as
+   max(k·σ_t, drift-span term).
 6. **Time-structure discriminants** *(blue-sky pass 2026-08-05 — details
    and the ⁵⁵Fe-vs-⁹⁰Sr bench proposal in `research/TIMING_PSD_NOTES.md`)*:
    a track's charge arrives spread over the full drift-time span
@@ -531,6 +601,25 @@ Apply Stage B+C to Phase-1 baseline samples (3 mm, all gases; 119 MeV e⁻ at
    adjudicate), and use the clustering of real-track TDOs to tighten the
    3-layer coincidence window below the full drift span (accidentals fall
    quadratically with the window).
+   **Price side now measured** *(2026-08-06,
+   `research/TIME_RESOLUTION_NOTES.md` §3)*: at a fixed 2 fC threshold the
+   ballistic deficit costs MIP efficiency 99.4 % → 96.7 % → **77.8 %** going
+   t_p = 100 → 50 → 25 ns in Ar/CO₂/Iso, and 92.6 % → 78.1 % → **42.1 %** in
+   Ne/CH₄. Any short-peaking scheme must either lower the threshold in step
+   or pay that ε_e directly — fold this into the handle-1 ROC before
+   proposing it.
+
+7. **Time resolution per pad hit** *(new step, 2026-08-06)*. Deliverable:
+   σ_t(gas, gap, t_p, threshold, ENC) with the contribution budget, both raw
+   and time-walk-corrected, plus the predicted (PDO, TDO) correlation — the
+   quantity to compare against the SPS muon data. First pass is already done
+   with a standalone toy (`vmm/time_resolution.py`, no Geant4/Stage B
+   needed): **σ_t ≈ 10–13 ns in argon mixtures, 15–25 ns in neon mixtures**,
+   dominated by primary-ionization statistics as σ_t ≈ (1.0–1.5)/(n_p·v_d).
+   Re-run through the full chain once Stage B exists and once Magboltz v_d
+   replaces the placeholder drift velocities (P0.10) — σ_t ∝ 1/v_d, so that
+   is the leading input uncertainty. Feeds step 5 (coincidence window) and
+   `TESTBEAM_PLAN.md` §2.6.
 
 Validation inside Phase 2: a handful of full Garfield++ AvalancheMC/
 microscopic events vs the sampler; sensitivity of ROC to Polya θ, ε_mesh,
@@ -569,8 +658,10 @@ The decision matrix. Axes:
   detector. Stage B/C re-runs are cheap (Python over cluster files).
 
 Deliverables: the (gap, gas) heatmaps of — ε_e at fixed γ rejection; P₀
-floor; pad multiplicity; drift-time span; required mesh voltage for
-reference gain. Plus a recommendation memo: operating point(s) to carry into
+floor; pad multiplicity; drift-time span; **per-hit time resolution σ_t**
+(2026-08-06 — cheap to add, and it feeds the coincidence window of §5 step 5
+where it competes with the gas's photon-rejection difference); required mesh
+voltage for reference gain. Plus a recommendation memo: operating point(s) to carry into
 prototype tests, with the flammability/premix constraints from §7 applied.
 
 ## 7. Gas candidates — physics, flammability, procurement
@@ -693,10 +784,25 @@ is a genuine systematic — quote both ends.
 
 ## 8. Phase 4 — optional refinements (only if earlier phases demand)
 
-- VMM3a waveform-level simulation: convolve induced currents with the ATLAS
-  Athena `VMM_Shaper` closed-form h(t) (pole/residue form, ~20 lines) —
-  needed only for µTPC timing, time-walk, streaming pile-up.
+- ~~VMM3a waveform-level simulation with a **realistic induced current**~~
+  **Moved out of Phase 4 on 2026-08-07 → P0.17.** MX17's review
+  (`HANDOFF_MX17_RESPONSE.md` §2.1) pointed out the cost estimate was wrong
+  for *our* stack: the expensive machinery is only needed for a **resistive**
+  detector, and P2's is not, so the weighting potential is static and
+  closed-form (Riegler / Garfield++ `ComponentParallelPlate`). An afternoon,
+  not a phase — and it is the main model risk in the σ_t prediction we plan
+  to compare against SPS, so it should not be sitting in "optional".
+  *(µTPC is **not** on this list either way: it needs a multi-channel cluster
+  and we have ~1.1 pads.)* Still Phase 4 from the original bullet: streaming
+  pile-up and baseline wander.
 - Mesh transparency from field maps / measured curves instead of a constant.
+  *(2026-08-07: likely free — MX17 is solving a woven-mesh unit cell in
+  Garfield++ neBEM, a desktop-scale job, for transparency ε(E_d/E_a),
+  funneling and ion endpoints. P2's mesh differs only in weave parameters,
+  so the same script with different constants covers this item and the
+  measured-transparency escalation path in `TESTBEAM_PLAN.md` §6. MX17 will
+  link the script path in `HANDOFF_MX17_RESPONSE.md` §2.3 when it exists —
+  **ask before writing our own.** Related: P0.13's woven-mesh cross-check.)*
 - Pillar geometry refinement in Geant4. *(Woven-mesh geometry moved out of
   Phase 4 on 2026-08-05 — it is now P0.13 and blocking, since the mesh is
   the single largest fake source in the analytic budget.)*
@@ -781,8 +887,18 @@ is a genuine systematic — quote both ends.
    highest-value ask is a **phase-space file at the wheel plane** for both
    species (P0.15 consumes it). Until then run the §4.2 energy grid and
    present results per energy, not folded.
-6. **Two pad-mapping revisions disagree (79/1280)** — pad-level observables
-   carry that caveat until the DAQ mapping is confirmed.
+6. **The two pad-mapping revisions disagree on the readout order, not the
+   geometry** *(restated 2026-08-06 — the earlier "79/1280 pad positions
+   disagree" was a rounding artifact in `analyze_p2_readout.py`, now fixed;
+   matched by nearest neighbor the two pad planes agree to 2.5 µm, i.e.
+   print precision)*. The real discrepancy is larger and different: only
+   **11/1280 (connector, channel) pairs land on the same pad**. Geometric
+   pad-level observables (multiplicity, cluster size, position resolution)
+   are therefore *safe*; everything channel-level is not — VMM neighbor
+   logic (chan ±1 is a 12 mm neighbor in one revision and a 126 mm one in
+   the other, `vmm/nl_map.py`), dead/noisy-channel masks, and any
+   per-channel comparison with test-beam data. Ask which revision the DAQ
+   uses (`testbeam/TB_CONDITIONS.md` T0.4).
 7. **W-value/PAI approximations** — validated internally (P0.6) and by the
    Ar-vs-Ne *ratio* being robust even if absolutes shift. Note the Penning
    caveat in §5 step 3a: a single tabulated W per gas mis-scales Ne against

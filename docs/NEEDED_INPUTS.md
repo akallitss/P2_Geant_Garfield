@@ -197,12 +197,49 @@ production uses a similar bulk process, the same pattern likely applies.
 MX17-like 0.6 mm / 4.68 mm pattern, then add pillars as daughters of the
 `AmpGas` volume as MX17 does.
 
+### ⬜ TO-DO before any production run: get the Dynamask pillar map
+
+*(Dylan, 2026-08-06.)* **Get the Dynamask pillar map from
+`P2_Basket_Analysis` (or wherever it lives) before running.** This gates
+production runs — the pillar layout has to be in the geometry, not
+retrofitted afterwards, because it changes both the active-gas fraction and
+where the dead spots are.
+
+What we already have in-repo, and what is still missing:
+
+| | status |
+|---|---|
+| Pillar **pattern** from the CERN bulk mask `design/gerbers/bulk_masks_CERN/P2_Mask2.gbr` | ✅ Ø **0.5 mm**, pitch **2.000 mm** exact, **41 366** pillars, **4.8 %** of the amp gap (`P2_GEOMETRY.md` §2) |
+| Pillar **material** | ✅ **Dynamask** photoimageable dry film, ρ ≈ 1.2–1.4 g/cm³, ε_r ≈ 3.9 — *not* kapton/FR4 (`HANDOFF_MX17_RESPONSE.md` §2.4) |
+| Pillar **map actually used by the analysis** (as-fabricated positions / dead-channel-adjacent pillars, in whatever form `P2_Basket_Analysis` consumes) | ⬜ **NEEDED — this item** |
+| Pillars in the Geant4 geometry | ⬜ not implemented (amp gap is pure gas today) |
+
+Why the mask alone may not be enough, i.e. why to go get the analysis's map:
+the gerber gives the *design* pattern, while the analysis presumably carries
+the map it actually uses to mask pad regions — and if the two disagree
+(revision, origin offset, masked/edge pillars), the discrepancy is exactly
+the kind of thing that silently biases per-pad efficiency. Getting the same
+file the data analysis uses also keeps sim and data on one definition, the
+same argument as the pad-mapping revision (`SIM_CAMPAIGN_PLAN.md` §10.6).
+
+What it feeds: pillar dead spots in Stage B (a drifting electron landing on a
+pillar is lost, and the amplification field is locally absent), the 4.8 %
+effective-gas correction in the amp gap, and the Dynamask material budget.
+Filed as **P0.16** in the campaign plan.
+
 ---
 
 ## ⬜ Readout-copper zoning, real pad/strip pattern, resistive layer
 
 *(Dylan / MX17_Geant, 2026-08-06.)* Three accuracy upgrades landed in
 MX17_Geant that apply just as well to the P2 wedge. Ordered by effort/benefit.
+
+**Ticketed 2026-08-07** as **P0.18** (Cu zoning), **P0.19** (real pad
+artwork) and **P0.20** (resistive layer) in `SIM_CAMPAIGN_PLAN.md` §3 — until
+then these were written down here but were not on anyone's task list, which
+is how item 1 (an actual error in the current model, not an input request)
+sat unaddressed. This section stays as the detailed write-up; the plan
+carries the status.
 
 ### 1. Zone the Cu coverage — cheap, and P2 currently has the error
 
@@ -240,10 +277,41 @@ layer. **Needed input:** is the P2 resistive layer strips, a uniform DLC/paste
 sheet, or pads? If it is uniform, the current solid slab is right and only the
 thickness/density need confirming — but that should be stated, not assumed.
 
-### Do NOT port the MX17 rasterizer fix
+### Do NOT port the MX17 rasterizer fix — but P2's script has its own bug
 
 MX17's `analyze_cu_coverage.py` had an endpoint-inclusive PIL bug that
 inflated every feature by one pixel per dimension (+16 % on 0.68 mm pads at
 0.05 mm/px), so its published coverages were ~13 % high until 2026-08-06.
-**P2's equivalent script uses shapely (exact vector geometry) and is not
-affected.** Flagged only so nobody "fixes" a bug that is not there.
+P2's equivalent script uses shapely (exact vector geometry) and is **not**
+affected by *that* bug. Flagged so nobody "fixes" a bug that is not there.
+
+**Corrected 2026-08-07 — the original wording ("is not affected", full stop)
+was too strong and told the next reader not to look.** P2's script has a
+different defect with a similar effect. `ApertureDef.size` in
+`scripts/gerber/gerber_outline.py` returns `max(self.params)`, which is right
+for `C`/`R`/`O` but wrong for KiCad's **`RotRect` macro apertures**, whose
+third parameter is a **rotation angle in degrees**, not a dimension:
+
+```
+%ADD19RotRect,0.300000X1.800000X302.763000*%     <- 0.3 x 1.8 mm, rotated 302.763 deg
+```
+
+`copper_union` sends any non-`R` flash down the `Point(...).buffer(ap.size/2)`
+branch, so each of these paints a disc of radius ~151 mm. `P2_BASKET-F_Cu.gbr`
+declares 21 such apertures (verified 2026-08-07), flashed at the ten connector
+footprints. The script also counts apertures tagged `NonConductor` and
+`Profile` as copper.
+
+⇒ **`p2_fcu_coverage = 0.983` and the 0.937 board-level figure are both
+inflated and must not be used until the script is fixed.** Exact polygon
+geometry reportedly gives ~0.97 over the pad field and ~0.19 in the fan-out
+band — which, note, is the *same* active-vs-outside split that P0.18 needs
+anyway, so the fix and the zoning land together. Being repaired in a parallel
+work stream as of 2026-08-07; `SimConfig.hh`'s provenance comment on those two
+constants needs updating at the same time.
+
+Also correct in passing: `P2_GEOMETRY.md` §3 describes B_Cu as "a single solid
+ground plane". It is not — it is stroked signal traces plus via pads, which is
+what the coverage script's own docstring says ("signal lines, not a plane") and
+what `p2_bcu_coverage = 0.174` already encodes. The model input looks right;
+only the prose is wrong.
