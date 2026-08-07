@@ -21,6 +21,9 @@ public:
 
 private:
     void LoadSpectrum(const std::string& filepath);
+    // Checks the fixed aim point against the real pad artwork in BOTH polar
+    // coordinates; see the definition for why one is not enough.
+    static void WarnIfAimPointOffPad(const SimConfig& cfg);
     double SampleSpectrum() const;
 
     std::unique_ptr<G4ParticleGun> fGun;

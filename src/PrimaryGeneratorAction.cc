@@ -6,6 +6,7 @@
 
 #include "PrimaryGeneratorAction.hh"
 #include "DetectorConstruction.hh"
+#include "P2PadMap.hh"
 
 #include "G4Event.hh"
 #include "G4ParticleTable.hh"
@@ -104,27 +105,7 @@ PrimaryGeneratorAction::PrimaryGeneratorAction(const SimConfig& cfg,
 
         fP2Mode = true; fP2Aim = aim; fP2Dir = dir; fP2Standoff = standoff;
 
-        if (cfg.p2_beam_spread_mm <= 0.0) {
-            // Warn if the fixed aim point lands on a pad boundary. A pencil
-            // beam parked on a boundary makes "which pad has the most
-            // charge" a coin flip and inflates pad multiplicity, and it does
-            // so invisibly -- MX17 lost a first result to exactly this
-            // (RESPONSE_SIM_PLAN §7). P2's own historical default, r=355 mm,
-            // sat 35 um from a ring boundary.
-            const double r = std::hypot(cfg.p2_gun_x_mm, cfg.p2_gun_y_mm);
-            const double ringPitch = 11.4290;                 // mm, measured
-            const double rInner    = 120.714;                 // first ring centre
-            const double frac = std::fabs(std::fmod(r - rInner + 0.5*ringPitch,
-                                                    ringPitch) / ringPitch - 0.5);
-            if (frac > 0.35)
-                G4cout << "PrimaryGeneratorAction: WARNING - the aim point "
-                       << "r = " << r << " mm sits " << 100.0*frac
-                       << "% of a ring pitch from the nearest pad centre, "
-                       << "i.e. near a RADIAL PAD BOUNDARY. Pad multiplicity "
-                       << "and any positional observable will be biased. "
-                       << "Use --beam-spread (>= one ring pitch, 11.43 mm) "
-                       << "for those observables." << G4endl;
-        }
+        if (cfg.p2_beam_spread_mm <= 0.0) WarnIfAimPointOffPad(cfg);
     }
 
     fGun->SetParticlePosition(G4ThreeVector(gunX, gunY, gunZ));
@@ -133,6 +114,86 @@ PrimaryGeneratorAction::PrimaryGeneratorAction(const SimConfig& cfg,
     if (!cfg.spectrum_file.empty()) {
         LoadSpectrum(cfg.spectrum_file);
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Is the fixed aim point actually on a pad, in BOTH coordinates?
+//
+// A pencil beam parked on a pad boundary makes "which pad has the most
+// charge" a coin flip and inflates pad multiplicity, invisibly. MX17 lost a
+// first result to exactly that (RESPONSE_SIM_PLAN §7).
+//
+// The pad plane is polar, so there are TWO ways to land on a boundary and
+// fixing one does not fix the other. The historical default (r = 355 mm) sat
+// 35 um from a *radial* boundary; moving it to a ring centre then put it at
+// phi = 30.0000 deg, which is 61 um from the centre of an *azimuthal* gap --
+// only 25 % of events deposited in pad copper at all, against 100 % at a
+// true pad centre. Hence an exact 2-D check against the real artwork
+// (include/P2PadMap.hh, extracted from the gerbers) rather than a radial
+// heuristic against the mapping files.
+void PrimaryGeneratorAction::WarnIfAimPointOffPad(const SimConfig& cfg) {
+    const double x = cfg.p2_gun_x_mm, y = cfg.p2_gun_y_mm;
+    const double r = std::hypot(x, y);
+    double phi = std::atan2(y, x);
+
+    const P2::PadRing* ring = nullptr;
+    int ringIdx = -1;
+    for (int i = 0; i < P2::kNPadRings; ++i) {
+        if (r >= P2::kPadRings[i].rIn && r <= P2::kPadRings[i].rOut) {
+            ring = &P2::kPadRings[i]; ringIdx = i; break;
+        }
+    }
+    if (!ring) {
+        G4cout << "PrimaryGeneratorAction: WARNING - the aim point r = " << r
+               << " mm is NOT inside any pad ring (pad field spans "
+               << P2::kPadFieldRIn << " .. " << P2::kPadFieldROut
+               << " mm). The beam is not hitting instrumented area."
+               << G4endl;
+        return;
+    }
+
+    // Nearest pad centre in phi, and how far off it we are.
+    const double fidx = (phi - ring->phiFirst) / ring->dPhiPitch;
+    const double k    = std::round(fidx);
+    const double dphi = std::fabs(phi - (ring->phiFirst + k * ring->dPhiPitch));
+    const bool onCopperPhi = (dphi <= 0.5 * ring->dPhiPad);
+    const bool inRing      = (k >= 0 && k < ring->n);
+
+    // Radial margin to the ring's copper edge.
+    const double rMid = 0.5 * (ring->rIn + ring->rOut);
+    const double dr   = std::fabs(r - rMid);
+
+    if (!inRing) {
+        G4cout << "PrimaryGeneratorAction: WARNING - the aim point phi = "
+               << phi/deg << " deg is outside ring " << ringIdx
+               << "'s populated pads." << G4endl;
+        return;
+    }
+    if (!onCopperPhi) {
+        G4cout << "PrimaryGeneratorAction: WARNING - the aim point sits in an "
+               << "AZIMUTHAL INTER-PAD GAP: " << dphi * r * 1000.0
+               << " um from the nearest pad centre in phi (pad half-width "
+               << 0.5 * ring->dPhiPad * r * 1000.0 << " um) on ring "
+               << ringIdx << ". Pad multiplicity, charge sharing and every "
+               << "positional observable will be biased. Use --beam-spread, "
+               << "or aim at a pad centre." << G4endl;
+        return;
+    }
+    if (dr > 0.35 * (ring->rOut - ring->rIn)) {
+        G4cout << "PrimaryGeneratorAction: WARNING - the aim point is "
+               << dr * 1000.0 << " um from the radial centre of ring "
+               << ringIdx << " (half-height "
+               << 0.5 * (ring->rOut - ring->rIn) * 1000.0
+               << " um), i.e. close to a RADIAL pad boundary. Use "
+               << "--beam-spread for pad-level observables." << G4endl;
+        return;
+    }
+
+    if (cfg.verbose)
+        G4cout << "PrimaryGeneratorAction: aim point is on pad copper, ring "
+               << ringIdx << ", " << dr*1000.0 << " um from the radial centre "
+               << "and " << dphi*r*1000.0 << " um from the azimuthal centre."
+               << G4endl;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

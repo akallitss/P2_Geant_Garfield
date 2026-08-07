@@ -12,25 +12,28 @@ The stated plan is "fork the repo, plug in the pillar file, run the full
 chain". Two parts of that sentence do not yet correspond to anything in the
 repo, and it is better to know now:
 
-### ⛔ "The full chain" does not exist yet — only Stage A does
+### ⚠ "The full chain" is Stage A complete, Stage B skeletal, Stage C partial
 
 The campaign is designed as three stages (`SIM_CAMPAIGN_PLAN.md` §2):
 
 | stage | what it does | state |
 |---|---|---|
 | **A** — Geant4 | beam/background → ionization clusters in the gas | ✅ **works, this is what you can run today** |
-| **B** — drift/avalanche/induction → VMM | clusters → per-pad charge and time | ⛔ **not written.** P0.9. The pad-map loader and a standalone VMM emulator exist (`vmm/`), but nothing joins Stage A output to them |
+| **B** — drift/avalanche/induction → VMM | clusters → per-pad charge and time | 🟡 **skeleton works** (2026-08-07). `python3 -m stage_b.run stageA.root` produces per-pad charge and time end to end. Four physics inputs are still placeholders — read `stage_b/README.md` §3 before quoting anything from it |
 | **C** — electronics/analysis | PDO/TDO, thresholds, clustering, observables | 🟡 partial — the VMM emulator (`vmm/`) and the timing toy (`vmm/time_resolution.py`) run standalone, on synthetic input, not on Stage A output |
 
 So today you can produce ionization/edep/conversion-budget physics — which is
 what the gas decision actually rests on (`PHOTON_DISCRIMINATION_NOTES.md`) —
-but **not** pad charge, pad multiplicity, efficiency-vs-threshold, or a
-time-resolution number derived from real tracks.
+plus pad charge and pad multiplicity through Stage B. What you cannot yet get
+is anything that needs the electronics joined on (efficiency vs threshold, a
+time resolution from real tracks): Stage C still runs standalone on synthetic
+input, not on Stage B output.
 
-Before writing Stage B from scratch, read `HANDOFF_MX17_RESPONSE.md` §2.2:
-MX17 has a working digitizer (`MX17_Geant/response/digitizer/`, ~1700 lines
-with selftests, as of 2026-08-07) whose decomposition is identical to ours up
-to two plug-ins. **The plan of record is to lift it, not to rewrite it.**
+Stage B's placeholders matter for how you read it: gas transport is not
+Magboltz (P0.10), the induced current is a delta rather than an electron
+spike plus ion tail (P0.17), there are no pillars (P0.16, ~4.8 % efficiency
+bias), and mesh transparency is a constant (P0.13). All four are recorded in
+every Stage B output file.
 
 ### ⛔ There is no pillar code to plug a file into
 
@@ -47,18 +50,26 @@ What we already have: the design pattern from the CERN bulk mask
 ρ ≈ 1.2–1.4 g/cm³). What is missing is the map the *analysis* uses, so sim
 and data share one definition.
 
-### ⛔ HTCondor submission does not support `p2` mode
+### ✅ HTCondor submission now speaks `p2` — use the right script
 
-`scripts/submit_condor*.py` still speak the inherited MX17 modes. They pass
-`-g/-p/-e/-n/-o/-s` and `-a` (Al thickness, a vacuum-mode flag) and **no
-`-m`, no `--drift-gap`, no `--gun-*`, no `--skip-empty`**. Because `p2` is
-the *default* mode, they will happily run — producing p2-geometry jobs at
-default gaps, with no angle control, tagged with MX17-style names that
-`collect_results.py` then parses. That is a silent-wrong-answer path, not a
-crash. **P0.7 must be done before any campaign submission.**
+**Use `scripts/submit_condor_p2.py`** for campaign runs. It knows `-m p2` and
+the P2 geometry flags, the angle scan, `--skip-empty`, the §9 naming scheme,
+and `--beam-spread`; it refuses to submit an unknown gas (it asks the binary
+via `--list-gases`), and it writes a manifest of what was intended so you can
+diff it against the `RunMeta` of what came back.
 
-Everything below therefore describes **interactive / single-node Stage A
-running**, which does work.
+```bash
+python3 scripts/submit_condor_p2.py --dry-run --scan photon
+python3 scripts/submit_condor_p2.py --scan all --outdir /eos/user/<u>/<you>/p2
+```
+
+*Historical note, because it explains a class of result you may inherit:*
+until 2026-08-07 `submit_condor.py` passed no `-m`, and since `p2` is the
+default mode it silently ran P2 wedge geometry under vacuum-mode tags. It now
+passes `-m vacuum` explicitly. Separately, `collect_results.py` had the
+campaign gas names missing from a hardcoded regex and **silently dropped**
+every file it could not parse; it now groups on `RunMeta` and reports
+anything it cannot place. Any pre-08-07 output is suspect on both counts.
 
 ---
 
@@ -75,11 +86,40 @@ bash scripts/build.sh              # -> build/mm_sim
 falls back gracefully; it prints what it picked. Verified locally against
 Geant4 11.2.0 / ROOT 6.36.
 
-**If you will also run Garfield++ (Stage B, gas tables, field solves): do
-not use the CVMFS Garfield.** See `research/TOOLCHAIN_NOTES.md` §1 — the LCG
-builds are 281–664 commits behind and are missing, among other things, the
-neBEM OpenMP race fix and the interface-crossing check that makes mesh
-transparency correct. Magboltz gas tables are unaffected either way.
+### Garfield++, if you need it
+
+```bash
+bash scripts/setup_garfield.sh --check     # what would be used, and why
+source scripts/setup_garfield.sh           # set it up
+bash scripts/setup_garfield.sh --build     # build the pin (~15 min, one time)
+```
+
+**Which one you need depends entirely on what you are doing, and for the
+thing you probably want first, the CVMFS one is fine.**
+
+*Magboltz gas tables (P0.10) — CVMFS is fine.* Magboltz is vendored inside
+Garfield at 11.19 (Jan 2024) and has not moved: between the LCG Garfield and
+the current pin, `magboltz.f` differs only by a Fortran continuation marker
+(354 lines) and a missing comma in a FORMAT *print* statement. No cross
+section, no transport change; the Penning table is byte-identical and was
+re-probed to confirm it. So `source scripts/setup_lxplus.sh` and use the LCG
+view's Garfield — that unblocks Stage B's largest placeholder with no build.
+
+*Field solves and induction (P0.13, P0.17) — you need the pin.* LCG_108 is
+664 commits behind and LCG_109 is 281. Every API still exists, which is why
+this fails silently rather than loudly. Missing: the neBEM OpenMP race in the
+SVD inversion (wrong field solves on a multi-core box, no error), the
+interface-crossing check that stops electrons tunnelling through mesh wires —
+which *is* the mesh-transparency observable — and
+`AvalancheMicroscopic::GetIons()` for the ion tail.
+
+*Can you source someone else's install?* There is one on lxplus at
+`/afs/cern.ch/user/d/dneff/work/garfield_install/lcg109-927e5c21`, and
+`P2_SHARED_INSTALL=<path> source scripts/setup_garfield.sh` will use it. But
+it is in another user's AFS area, so it needs an ACL grant from them
+(`fs setacl -dir <path> -acl <your-username> read`, per directory), it dies
+with their account, and CERN is deprecating AFS. `--build` gives you your own
+in about 15 minutes and depends on nobody. Prefer that.
 
 ## 2. Smoke test
 
@@ -113,13 +153,20 @@ not reproducible; `collect_results.py` warns, but only if you read the warning.
 geometry-affecting parameter. `collect_results.py` warns on a mixed merge.
 
 **A pencil beam on a pad boundary silently biases pad-level observables.**
-The default aim point is now a pad *ring centre* (r = 349.286 mm, φ = 30°),
-and `mm_sim` warns if you move it near a boundary. But a single point is
-still a single point: **for any pad-multiplicity, charge-sharing or
-positional observable, pass `--beam-spread 11.43`** (one ring pitch) so the
-impact point averages over the pad cell. MX17 lost a first result to exactly
-this trap — a spurious 3× left/right asymmetry that was entirely the beam
-position (`MX17_Geant/design/RESPONSE_SIM_PLAN.md` §7).
+The pad plane is polar, so there are **two** independent ways to sit on a
+boundary, and this took two attempts to get right: the original default sat
+35 µm from a *radial* boundary, and moving it to a ring centre put it 61 µm
+from the centre of an *azimuthal* inter-pad gap — where only 25.7 % of events
+deposited in pad copper at all, against 100 % at a true pad centre. The
+default is now a pad centre in both coordinates, and `mm_sim` checks it
+against the real gerber-derived artwork, warning separately for a radial gap,
+an azimuthal gap, or an aim point off the pad field entirely.
+
+But a single point is still a single point: **for any pad-multiplicity,
+charge-sharing or positional observable, pass `--beam-spread 11.43`** (one
+ring pitch) so the impact point averages over the pad cell. MX17 lost a first
+result to exactly this trap — a spurious 3× left/right asymmetry that was
+entirely the beam position (`MX17_Geant/design/RESPONSE_SIM_PLAN.md` §7).
 
 **`--gun-theta` pivots about the drift mid-plane**, not the window, so an
 angle scan keeps illuminating the same pads. The standoff auto-raises to
@@ -146,7 +193,14 @@ These are the Stage-A-only studies that produce real results now:
   `testbeam/TB_CONDITIONS.md`, which is the one concrete thing being asked
   of you (`TESTBEAM_PLAN.md`).
 
-Each of these wants P0.7 (condor) first if run at campaign statistics.
+Submit them with `scripts/submit_condor_p2.py` (P0.7, done 2026-08-07).
+
+And through Stage B, on any of the above:
+
+```bash
+python3 -m stage_b.selftest                        # 16 checks, no Geant4
+python3 -m stage_b.run <stageA.root> -o padhits.root
+```
 
 ## 5. Python tooling
 
@@ -164,8 +218,7 @@ open. Full detail in `SIM_CAMPAIGN_PLAN.md` §3.
 
 | | |
 |---|---|
-| P0.7 | condor + `collect_results.py` do not speak `p2` |
-| P0.9 | Stage B does not exist (lift MX17's — check §2.2 first) |
+| P0.9 | Stage B skeleton done; Stage C not yet joined to it |
 | P0.10 | no Magboltz tables; generate wet variants alongside dry |
 | P0.16 | pillars: file **and** geometry code both missing |
 | P0.18 | `p2_fcu_coverage = 0.983` is inflated — the gerber script mis-reads `RotRect` apertures. Do not quote it |

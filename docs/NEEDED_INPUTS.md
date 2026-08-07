@@ -302,13 +302,27 @@ declares 21 such apertures (verified 2026-08-07), flashed at the ten connector
 footprints. The script also counts apertures tagged `NonConductor` and
 `Profile` as copper.
 
-⇒ **`p2_fcu_coverage = 0.983` and the 0.937 board-level figure are both
-inflated and must not be used until the script is fixed.** Exact polygon
-geometry reportedly gives ~0.97 over the pad field and ~0.19 in the fan-out
-band — which, note, is the *same* active-vs-outside split that P0.18 needs
-anyway, so the fix and the zoning land together. Being repaired in a parallel
-work stream as of 2026-08-07; `SimConfig.hh`'s provenance comment on those two
-constants needs updating at the same time.
+⇒ **The 0.937 board-level figure was inflated by 19 %.** ✅ **Fixed and
+cross-checked 2026-08-07 by two independent methods**: the rasterized
+extractor in `extract_readout_pattern.py`, and the shapely (exact vector
+geometry) path in `analyze_cu_coverage.py` after its aperture handling was
+repaired. They agree to 0.05–0.3 %:
+
+| | shapely (exact) | rasterized | old (buggy) |
+|---|---|---|---|
+| F.Cu board-wide | **0.7866** | 0.787 | 0.937 (+19.1 %) |
+| B.Cu board-wide | **0.1803** | 0.180 | — |
+| F.Cu active area | **0.9749** | 0.978 | 0.983 (+0.8 %) |
+| B.Cu active area | **0.1743** | 0.171 | 0.174 (−0.2 %) |
+
+**The important nuance, and why nothing published needs retracting:** the
+`RotRect` bug painted ~151 mm discs at the ten connector footprints, which
+sit *outside* the active area. So it wrecked the board-wide number (+19 %)
+while leaving the active-area number nearly right (+0.8 %). Every result so
+far came from a beam inside the active area, which is why the conversion
+budget survived the correction unchanged. And `p2_bcu_coverage = 0.174` was
+correct all along, to 0.2 % — only `P2_GEOMETRY.md`'s prose describing B.Cu
+as a solid ground plane was wrong.
 
 Also correct in passing: `P2_GEOMETRY.md` §3 describes B_Cu as "a single solid
 ground plane". It is not — it is stroked signal traces plus via pads, which is
