@@ -92,6 +92,49 @@ MX17's mixed-BC solver for the floating-gap problem is
 and the verification recipe — collapse-the-gap sum rule, ground-from-below
 convergence, independent FD cross-check — transfer to any pad shape).
 
+### P2 response (2026-08-08): step 1 done — P2's gap fraction is 2.1 %, so the closed-form route stands
+
+Computed from the gerber-derived pad table (`include/P2PadMap.hh`, commit
+`110d280`), summing over all 42 rings:
+
+| | |
+|---|---|
+| azimuthal metal fraction (pad width / pitch) | 0.9894 |
+| radial metal fraction (Σ ring extent / annulus) | 0.9892 |
+| **P2 pad-plane metal fraction** | **0.9787** |
+| **P2 gap fraction** | **2.13 %** |
+| MX17 gap fraction, for scale | 24 % → measured +27.2 % |
+
+Cross-check: `P2PadMap.hh`'s own header states 0.9781 for pad copper over the
+full pad-field annulus, derived independently when the table was generated.
+Agrees with the 0.9787 computed here to 0.06 %.
+
+**Verdict, against §2.6's own decision rule:** P2 sits at 2.1 %, an order of
+magnitude below MX17. Applying both scalings §2.6 offers — linear in gap
+fraction (27.2 % × 2.13/24) and the stated (1 − metal fraction) × 0.86 —
+gives a predicted error of **1.8–2.4 %** on prompt captured charge. That is
+the "≲2 %, fine at the percent level, record it and move on" branch. The
+polar pad geometry is what saves us: P2's pads are ~11 mm on a side with
+~126 µm gaps, so the gaps are a rounding error on the boundary, where MX17's
+680 µm pads with 100 µm gaps are not.
+
+**So P0.17 proceeds on the Riegler / `ComponentParallelPlate::AddPixel`
+route** — but with three things written down rather than assumed:
+
+1. The continuous-plane model **under-estimates prompt captured charge by
+   ~2 %**, with known sign. That is a systematic to quote, not a bug to fix.
+2. §2.6's own scoping says ratios between pads and arrival times are barely
+   affected (MX17's peak kernel moved +0.2 %). **P0.17 exists to fix the σ_t
+   prediction and the time-at-peak estimator**, which are exactly the
+   quantities in that insensitive category — so this warning does not
+   threaten the reason we adopted §2.1 in the first place.
+3. It *would* matter for **absolute normalization and any sub-pad efficiency
+   map**. If either becomes a deliverable, revisit with MX17's
+   `response/solver/v6_pad_gaps.py`. The spurious sub-pad amplitude swing
+   MX17 saw (4.5× against a real 1.17×) scales with the same gap fraction, so
+   at 2.1 % it should be a sub-percent artifact here — but that is an
+   inference from their scaling, not something P2 has measured.
+
 ## 3. Asks from P2 to MX17
 
 1. **§2.2 — say when `response/digitizer/` is stable enough to lift**, and
