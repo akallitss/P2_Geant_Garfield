@@ -1,6 +1,6 @@
 # Handoff / feedback from the MX17 response-simulation effort
 
-**Living document** — edited as the MX17 work progresses. Last update: **2026-08-07** (P2 worked through §2; see §2.5 for adoption status and §3 for asks going back).
+**Living document** — edited as the MX17 work progresses. Last update: **2026-08-08** (added §2.6, a measured warning that directly affects the adopted P0.17 induction route; P2 side has not yet reacted to it. Earlier: P2 worked through §2; see §2.5 for adoption status and §3 for asks going back).
 Context: the MX17 detector (resistive-strip bulk Micromegas, DREAM readout) is building a full response-simulation chain, deliberately modeled on this repo's staged A/B/C architecture. Plan lives at `~/CLionProjects/MX17_Geant/design/RESPONSE_SIM_PLAN.md`. This file collects what flows *back* to the P2 campaign: suggestions, shared components, and review notes.
 
 ## 1. What MX17 adopted from P2 (so interfaces stay compatible)
@@ -45,6 +45,52 @@ The three readout-accuracy upgrades from the separate MX17_Geant model work
 ticketed; they are now **P0.18** (Cu zoning — a live error in P2, and the one
 that matters most since copper is ~90 % of the argon photon fake budget),
 **P0.19** (real pad artwork) and **P0.20** (resistive layer structure).
+
+## 2.6 ⚠️ WARNING for P0.17 (2026-08-08): do NOT ground the inter-pad gaps in the weighting solve — MX17 measured this mistake at 27 %
+
+MX17's production weighting solver treated the gaps between pads as grounded
+copper. They are not copper — there is nothing there — and the error is **not**
+percent-level, which is what everyone (including MX17's own plan) had estimated.
+Measured 2026-08-08 (`~/CLionProjects/MX17_Geant/design/report/V6_PAD_GAPS_2026-08-08.md`,
+verified by four independent methods including a shared-nothing real-space FD solve):
+
+- **Prompt captured charge: +27.2 %** when the 100 µm gaps (24 % of the pad
+  plane, 680 µm pads on a 780 µm pitch) are allowed to float instead of being
+  clamped to ground. The gap surface floats to ~0.86 of the pad potential.
+- **A spurious 4.5× amplitude swing across one pad cell** that the real board
+  (≈1.17×) does not have — so any amplitude-vs-position-within-a-pad study
+  (efficiency maps, thresholds near pad boundaries) reads an artifact.
+- It is a **DC error, not a fine-structure error**: it does NOT decay with
+  distance from the pad plane (+27 % at 50 µm insulator, still +28 % at 5 mm).
+  The intuition "the plane looks uniform from far away, so the gaps can't
+  matter" is wrong — distance hides the *structure* of the boundary, not its
+  *mean*, and grounding the gaps gets the mean wrong. Scaling is ~linear in
+  gap fraction: 0/25/50/100/150 µm gaps → +0/6.5/13.2/27.2/41.9 % at 780 µm pitch.
+- What is *insensitive*: what lies under the gaps. Solid ground right below
+  through no conductor at all spans only 1.7 % — so the substrate stackup
+  doesn't matter, only the boundary condition at the pad plane itself.
+
+**Why this bites P0.17 specifically:** the adopted route (§2.1) is Riegler
+closed-form / Garfield++ `ComponentParallelPlate::AddPixel`, and that machinery
+**assumes the anode plane is a continuous conductor of which the pixel is a
+patch** — i.e. exactly the grounded-gap model. Before trusting absolute charge
+or sub-pad position dependence from it:
+
+1. Compute the actual metal fraction of the polar pad plane from the gerber
+   copper model the repo already has (commit `110d280` parses the real artwork).
+   The error scale is roughly (1 − metal fraction) × 0.86 of the drive.
+2. If the P2 gap fraction is ≲2 % of the area, the continuous-plane model is
+   fine at the percent level — record the number and move on. If it is
+   10–25 % (MX17 territory), the closed-form route needs a floating-gap
+   correction before any absolute normalization or sub-pad efficiency claim.
+3. Ratios between pads and arrival times are barely affected (MX17's peak
+   kernel moved +0.2 %) — this is about normalization and sub-pad maps, not
+   about whether sharing/timing studies are valid.
+
+MX17's mixed-BC solver for the floating-gap problem is
+`response/solver/v6_pad_gaps.py` (square pads, but the two-port layer cascade
+and the verification recipe — collapse-the-gap sum rule, ground-from-below
+convergence, independent FD cross-check — transfer to any pad shape).
 
 ## 3. Asks from P2 to MX17
 
