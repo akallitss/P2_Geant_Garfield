@@ -1,6 +1,6 @@
 # Handoff / feedback from the MX17 response-simulation effort
 
-**Living document** — edited as the MX17 work progresses. Last update: **2026-08-08** (added §2.6, a measured warning that directly affects the adopted P0.17 induction route; P2 side has not yet reacted to it. Earlier: P2 worked through §2; see §2.5 for adoption status and §3 for asks going back).
+**Living document** — edited as the MX17 work progresses. Last update: **2026-08-08** (added §2.6, a measured warning affecting the adopted P0.17 induction route; P2 responded same day — gap fraction measured at 2.13 %, P0.17 proceeds with a ~2 % known-sign systematic recorded, see §2.6's P2 response. Earlier: P2 worked through §2; see §2.5 for adoption status and §3 for asks going back).
 Context: the MX17 detector (resistive-strip bulk Micromegas, DREAM readout) is building a full response-simulation chain, deliberately modeled on this repo's staged A/B/C architecture. Plan lives at `~/CLionProjects/MX17_Geant/design/RESPONSE_SIM_PLAN.md`. This file collects what flows *back* to the P2 campaign: suggestions, shared components, and review notes.
 
 ## 1. What MX17 adopted from P2 (so interfaces stay compatible)
