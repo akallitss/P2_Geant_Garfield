@@ -10,7 +10,9 @@ Outputs to docs/figures/ by default:
     p2_board_copper.png    F.Cu / B.Cu rendered from the production gerbers
     p2_stack_xsec.png      model cross-section at phi=30 (true scale + zooms)
     p2_3d_overview.png     assembled 3D views (z exaggerated where noted)
-    p2_3d_exploded.png     exploded 3D view
+    p2_3d_exploded.png     exploded 3D view (no axes, for slides)
+    p2_3d_exploded_lr.png  same, rolled 90 deg: stack reads left to right,
+                           labels on leader arrows
 """
 
 from __future__ import annotations
@@ -36,6 +38,7 @@ _user_mt = os.path.join(os.path.dirname(os.path.dirname(matplotlib.__file__)),
 if os.path.isdir(_user_mt) and _user_mt not in mpl_toolkits.__path__:
     mpl_toolkits.__path__.insert(0, _user_mt)
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+from mpl_toolkits.mplot3d import proj3d
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.projections import register_projection
 register_projection(Axes3D)
@@ -321,24 +324,62 @@ def fig_xsec(outdir):
 # Figure 3/4 — 3D renders
 # ─────────────────────────────────────────────────────────────────────────────
 
+EXPLODE_GROUPS = {  # layer-name prefix -> explode group index
+    "FrontWindow": -2, "FrontGas": -1,
+    "DriftCathode": 0, "DriftGas": 1, "Micromesh": 2, "AmpGas": 2,
+    "PCB": 3, "BackGas": 4, "BackWindow": 5,
+    "GasFrame": 1, "GasFrameBack": 4}
+
+# Label -> the explode groups it points at, for the annotated exploded views.
+EXPLODE_LABELS = [  # wrapped so a big font still fits a narrow column
+    ("front window\n(bulged mylar)",                   (-2,)),
+    ("drift cathode (2 foils)\n+ drift gas + frame",   (0, 1)),
+    ("mesh + amp gap",                                 (2,)),
+    ("readout PCB\n(Cu/FR4/Cu)",                       (3,)),
+    ("back gas\n+ carbon back frame",                  (4,)),
+    ("back window\n(bulged mylar)",                    (5,)),
+]
+LABEL_FS = 15
+
+
+def grp(name):
+    for k in sorted(EXPLODE_GROUPS, key=len, reverse=True):
+        if name.startswith(k):
+            return EXPLODE_GROUPS[k]
+    return 0
+
+
+def _poly_area(poly):
+    p = np.asarray(poly)
+    x, y = p[:, 0], p[:, 1]
+    return abs(np.dot(x, np.roll(y, -1)) - np.dot(y, np.roll(x, -1))) / 2
+
+
+def group_anchors(zexag, explode):
+    """(group index) -> (mid-z, footprint) of that group in the exploded
+    render, plus the full z range the exploded stack occupies."""
+    layers, frames, windows, _ = M.build_stack()
+    zs: dict[int, list[float]] = {}
+    poly: dict[int, list] = {}
+    lo, hi = 1e9, -1e9
+    for L in layers + frames + windows:
+        g = grp(L.name)
+        zs.setdefault(g, []).append(L.z0 + L.t / 2)
+        if g not in poly or _poly_area(L.poly) > _poly_area(poly[g]):
+            poly[g] = L.poly  # the group's widest piece = its silhouette
+        lo = min(lo, L.z0 * zexag + g * explode)
+        hi = max(hi, (L.z0 + L.t) * zexag + g * explode)
+    anchors = {g: ((sum(v) / len(v)) * zexag + g * explode, poly[g])
+               for g, v in zs.items()}
+    return anchors, lo, hi
+
+
 def draw_model_3d(ax, zexag=1.0, explode=0.0):
     """Draw the full model. zexag scales z; explode adds spacing between groups."""
     layers, frames, windows, key_z = M.build_stack()
 
     def Z(z, group):
         return (z * zexag + group * explode)
-
-    groups = {  # name prefix -> explode group index
-        "FrontWindow": -2, "FrontGas": -1,
-        "DriftCathode": 0, "DriftGas": 1, "Micromesh": 2, "AmpGas": 2,
-        "PCB": 3, "BackGas": 4, "BackWindow": 5,
-        "GasFrame": 1, "GasFrameBack": 4}
-
-    def grp(name):
-        for k in sorted(groups, key=len, reverse=True):
-            if name.startswith(k):
-                return groups[k]
-        return 0
 
     skip_gas_3d = {"FrontGas", "BackGas", "DriftCathode_Gas"}
     for L in layers + frames + windows:
@@ -382,25 +423,108 @@ def fig_3d(outdir):
     fig.savefig(out, dpi=160); plt.close(fig)
     print("wrote", out)
 
-    fig = plt.figure(figsize=(10.5, 11))
+    zexag, explode = 4, 28
+    anchors, _, _ = group_anchors(zexag, explode)
+    fig = plt.figure(figsize=(11.5, 7.0))
     ax = fig.add_subplot(projection="3d")
-    draw_model_3d(ax, zexag=4, explode=28)
+    draw_model_3d(ax, zexag=zexag, explode=explode)
     ax.set_zlim(-160, 260)
     ax.set_box_aspect((710, 640, 420))
     ax.view_init(elev=18, azim=-105)
-    ax.set_zticks([])
-    for ztxt, lab in [(-120, "front window (bulged mylar)"),
-                      (-10, "drift cathode (2 foils) + drift gas + frame"),
-                      (75, "mesh + amp gap"),
-                      (115, "readout PCB (Cu/FR4/Cu)"),
-                      (165, "back gas + carbon back frame"),
-                      (235, "back window (bulged mylar)")]:
-        ax.text(640, -60, ztxt, lab, fontsize=10, ha="left")
-    ax.set_title("P2 wedge model — exploded (z ×4, groups separated)", fontsize=12)
-    fig.tight_layout()
-    fig.subplots_adjust(left=-0.14, right=0.80, top=0.98, bottom=0.02)
+    ax.set_axis_off()  # presentation view: the model floats, no x/y/z axes
+    fig.subplots_adjust(left=-0.13, right=0.70, top=1.10, bottom=-0.38)
+    fig.canvas.draw()
+
+    # Leaders land on the right-hand silhouette of each piece and run out to a
+    # label column; the text sits at the anchor height, pushed apart where two
+    # pieces project too close together to give the type room.
+    tips, bottom = [], 1.0
+    for lab, groups in EXPLODE_LABELS:
+        z = sum(anchors[g][0] for g in groups) / len(groups)
+        poly = max((anchors[g][1] for g in groups), key=_poly_area)
+        pts = [_fig_xy(fig, ax, x, y, z) for x, y in resample(poly, 96)]
+        tips.append(max(pts, key=lambda p: p[0]))
+        bottom = min(bottom, min(p[1] for p in pts))
+    # Stack the labels by measured height so the whole column is comfortably
+    # shorter than the figure, then slide it down if it would run off the top.
+    figh = fig.get_size_inches()[1]
+    hs = [(lab.count("\n") + 1) * LABEL_FS * 1.35 / 72 / figh
+          for lab, _ in EXPLODE_LABELS]
+    pad = 0.022
+    ys = [t[1] for t in tips]
+    ys[0] = max(ys[0], bottom + 0.03 + hs[0] / 2)
+    for i in range(1, len(ys)):  # tips run bottom-to-top in stack order
+        ys[i] = max(ys[i], ys[i - 1] + (hs[i - 1] + hs[i]) / 2 + pad)
+    over = (ys[-1] + hs[-1] / 2) - 0.97
+    if over > 0:
+        ys = [y - over for y in ys]
+    for (lab, _g), (tx, ty), y in zip(EXPLODE_LABELS, tips, ys):
+        ax.annotate(lab, xy=(tx, ty), xycoords="figure fraction",
+                    xytext=(0.735, y), textcoords="figure fraction",
+                    ha="left", va="center", fontsize=LABEL_FS,
+                    # relpos pins the leader to the left edge of the text block
+                    # instead of letting it leave from under the words.
+                    arrowprops=dict(arrowstyle="-", lw=1.1, color="0.25",
+                                    shrinkA=6, shrinkB=3, relpos=(0.0, 0.5)))
     out = os.path.join(outdir, "p2_3d_exploded.png")
-    fig.savefig(out, dpi=160); plt.close(fig)
+    fig.savefig(out, dpi=160)  # no tight bbox: it crops the outer labels
+    plt.close(fig)
+    print("wrote", out)
+
+    fig_3d_exploded_lr(outdir)
+
+
+def _fig_xy(fig, ax, x, y, z):
+    """3D data point -> figure-fraction coordinates (roll included)."""
+    xs, ys, _ = proj3d.proj_transform(x, y, z, ax.get_proj())
+    return fig.transFigure.inverted().transform(ax.transData.transform((xs, ys)))
+
+
+def fig_3d_exploded_lr(outdir):
+    """The exploded view rolled 90 deg, so the stack reads left to right, with
+    the labels off to the side on leader arrows. No axes — it floats."""
+    zexag, explode = 4, 62
+    anchors, zlo, zhi = group_anchors(zexag, explode)
+    pad = 0.06 * (zhi - zlo)
+
+    fig = plt.figure(figsize=(13.5, 10))
+    ax = fig.add_subplot(projection="3d")
+    draw_model_3d(ax, zexag=zexag, explode=explode)
+    ax.set_zlim(zlo - pad, zhi + pad)
+    ax.set_box_aspect((710, 640, (zhi - zlo + 2 * pad)))
+    # roll=-90 lays the stack down horizontally, front window (beam side) left.
+    ax.view_init(elev=18, azim=-105, roll=-90)
+    ax.set_axis_off()
+    fig.subplots_adjust(left=-0.03, right=1.03, top=1.02, bottom=-0.02)
+
+    # Anchor each label on the mid-plane of its group, at the wedge centroid.
+    # The text alternates top / bottom and each row is spread evenly across the
+    # frame: anchors run left to right in group order, so the leaders never
+    # cross even though the text is not directly over its piece.
+    fig.canvas.draw()
+    rows = {True: [i for i in range(len(EXPLODE_LABELS)) if i % 2 == 0],
+            False: [i for i in range(len(EXPLODE_LABELS)) if i % 2 == 1]}
+    slot = {}
+    for idx in rows.values():
+        for j, i in enumerate(idx):
+            slot[i] = 0.18 + (0.64 * j / max(len(idx) - 1, 1))
+    for i, (lab, groups) in enumerate(EXPLODE_LABELS):
+        z = sum(anchors[g][0] for g in groups) / len(groups)
+        poly = max((anchors[g][1] for g in groups), key=_poly_area)
+        top = (i % 2 == 0)
+        # Land the leader on the silhouette edge of the piece facing its row,
+        # so it never has to cross the stack to reach the label.
+        pts = [_fig_xy(fig, ax, x, y, z) for x, y in resample(poly, 96)]
+        fx, fy = (max if top else min)(pts, key=lambda p: p[1])
+        ax.annotate(lab, xy=(fx, fy), xycoords="figure fraction",
+                    xytext=(slot[i], 0.975 if top else 0.025),
+                    textcoords="figure fraction",
+                    ha="center", va="top" if top else "bottom", fontsize=LABEL_FS,
+                    arrowprops=dict(arrowstyle="-", lw=1.1, color="0.25",
+                                    shrinkA=6, shrinkB=3))
+    out = os.path.join(outdir, "p2_3d_exploded_lr.png")
+    fig.savefig(out, dpi=160)  # no tight bbox: it crops the outer labels
+    plt.close(fig)
     print("wrote", out)
 
 
