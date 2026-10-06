@@ -174,25 +174,41 @@ What is in it (checked 2026-10-06):
 - 5 000 entries spread over 200 × 90 bins is sparse: fine for 1D marginals,
   thin for a correlated E–θ sampling.
 
-**What to ask Matthieu:**
+**What the campaign actually uses it for** (revised 2026-10-06): weighting
+the mono-energetic photon scans into the real background spectrum, to set the
+upper ADC cut. Energy spectrum + angles in the file are enough for that; the
+earlier list of format requests (θ range, counting plane, binning, stats) is
+dropped — none changes the e/γ answer at the level we need.
 
-1. **θ convention**: measured from +z (beam axis)? θ in 90–180° means the
-   photons travel upstream. Which face of the MM (drift-cathode or PCB
-   side) faces +z in detTest? That decides whether a photon crosses the
-   cathode first or the PCB first in our model.
-2. **Extend θ to 0–180°**: 3–5 % of the flux (the "from behind" photons)
-   is in the underflow and has lost its angle.
-3. **Record the flux at the outer window instead of the drift gap**, if
-   possible. The current spectrum already includes his windows, cathode,
-   copper and FR4 (which differ from ours, `figures/p2_stack_vs_p2sim.png`).
-   Feeding it through our geometry would attenuate it twice.
-4. **Log or finer energy binning below 50 keV, and range up to ~10 MeV.**
-   Fluorescence lines and the soft part dominate the conversion response.
-5. **More statistics**, or the raw per-photon list (E, θ, φ, x, y, entry
-   face) instead of histograms. A list is what our generator can sample
-   from directly.
-6. Beam current / conditions the MHz refer to, and whether the map is
-   kHz response-weighted.
+**Signal electrons:** 100 MeV (Alexandra 2026-10-06). At 30–150 MeV the
+gas deposit is on the Fermi plateau, so the energy choice does not matter;
+the incidence angle does (`--gun-theta` scan).
+
+**Origin of the soft photons** (`../Downloads/Bounce_lowE_map.pdf`,
+Matthieu 2026-10-06, last bounce of low-energy photons, geometry
+`sb_Target_500_Det0_-2700_Diff_300_B_70`):
+
+| | MM0 | MM1 | MM2 |
+|---|---|---|---|
+| low-E photon rate | 2.0 GHz | 337 MHz | 234 MHz |
+| chamber wall (R ≈ 1.1 m, mostly the "rings") | 82 % | 56 % | 56 % |
+| Kevlar window | 7 % | 19 % | 16 % |
+| detector chamber | 7.5 % | 14 % | 16 % |
+| target, pipe, mask | 2 % | 8 % | 4 % |
+
+Matthieu: they are stopped by (probably) the readout plane. That is the same
+picture as the energy split above: in MM0, the 3.7 % of photons below 20 keV
+make 55 % of the response; behind MM0 the soft part drops to ~10 %.
+Caveat: his readout is 50 µm + 50 µm of solid copper. Ours is 18 µm pads +
+18 µm traces at ~17 % coverage, about 5× less copper, so in the real
+detector MM0's readout plane passes much more of the soft component to MM1.
+Check with our Geant4 by firing 10–20 keV photons from behind before relying
+on the layer ordering.
+
+**Still worth asking Matthieu** (only these):
+1. What the MHz assume (beam current), so photon and electron rates can be
+   put on one footing for the fake-rate estimate.
+2. The energy cut defining "low E" in the bounce map.
 
 ## 3. 🟡 Geometry — Alexandra's review
 

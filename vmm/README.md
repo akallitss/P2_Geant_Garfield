@@ -59,6 +59,20 @@ K₀ = 1.584   K₁ = −0.792 − 0.115i   p₀ = 1.263/a   p₁ = (1.149 − 0
 s_bd = min(1, t_peak/150 ns)        (Micromegas ion-tail ballistic deficit)
 ```
 
+The same transfer function is written up in
+`../data/VMM-electronics/2026_Iakovidis_et_al_VMM_shaper_from_Patrick_Scholer.pdf`
+(Alexopoulos, de Geronimo, Iakovidis, Polychronakos; received 2026-10-06).
+Its poles, residues and a = t_peak/1.5 match the constants above, checked:
+peak at 98.9 ns for t_peak = 100 and 197.8 ns for 200.
+- The note's text gives Im p₁ = −0.789. Its own code uses −0.786, and only
+  −0.786 reproduces its K₀ = 1/((p₀ − Re p₁)² + Im p₁²) = 1.584 (−0.789 gives
+  1.574). We keep −0.786.
+- The note has **no ballistic-deficit term**: s_bd comes from Athena
+  (`MM_ElectronicsResponseSimulation`, 150 ns ion tail tuned on ATLAS NSW
+  128 µm gaps, Ar/CO₂). For our 150 µm gap and Ne mixtures that 150 ns is an
+  assumption. It is the term that sets the 100 ns vs 200 ns amplitude ratio,
+  and the Garfield signal check should fix it.
+
 Channel logic (Athena `MM_ElectronicsResponseSimulation`):
 - a channel **fires** if the shaped signal crosses its threshold inside the
   search window (acceptance window extended by `vmmDeadtime` = 200 ns below
