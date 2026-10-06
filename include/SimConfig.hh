@@ -42,8 +42,11 @@ struct SimConfig {
     // ── P2 wedge mode ─────────────────────────────────────────────────────
     // Values marked GUESS are not backed by design data — see docs/P2_MODEL.md
     // for the full assumptions table and what to confirm with the collaboration.
-    double p2_drift_mm       = 4.0;    // drift gap; 4 mm = frame V2 ledge height
-                                       // (P2_Frame_V2.0.stp, Alexandra 2026-10-06).
+    double p2_drift_mm       = 3.964;  // drift GAS, mesh top -> drift foil. The
+                                       // frame (ledge 4.0 mm, P2_Frame_V2.0.stp) sits
+                                       // on the 150 um Dynamask, level with the mesh,
+                                       // so gas = 4.0 - mesh slab (0.036). The nominal
+                                       // "4 mm drift" (Alexandra 2026-10-06).
                                        // Campaign will scan 1..4 mm via --drift-gap.
     double p2_amp_um         = 150.0;  // amplification gap — confirmed 150 um (2026-08-05)
     double p2_mesh_wire_um   = 18.0;   // woven SS mesh 45/18: wire diameter and

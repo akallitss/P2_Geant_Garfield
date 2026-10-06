@@ -54,6 +54,16 @@ constexpr double kDriftOpenEdgeOffset = 0.0;
 constexpr double kActiveRIn  = 119.87;
 constexpr double kActiveROut = 589.80;
 
+// ── Pad zone: the copper pad field (P2PadMap.hh) with straight edges 5.0 mm
+//    inside the 0 / 60 deg lines (5.00 / 5.12 mm measured from the pad
+//    table). The Saclay pillar field fills the same zone. The carbon back
+//    frame runs from the board outline in to this zone (Alexandra
+//    2026-10-06: "exactly the perimeter of the bare PCB without the active
+//    zone"), so the back gas and back window use it as their outline. ───────
+constexpr double kZoneRIn         = 114.998;
+constexpr double kZoneROut        = 594.872;
+constexpr double kZoneEdgeOffset  = -5.0;    // negative = inward
+
 // Closed CCW polygon of a wedge profile: annular sector r in [rIn, rOut],
 // phi in [0, 60] deg, both radial edges offset outward perpendicular by
 // edgeOffset, truncated by the chord y <= topCut. Passing the board

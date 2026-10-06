@@ -274,7 +274,7 @@ def fig_xsec(outdir):
 
     ax1.annotate("", xy=(355, -1.5), xytext=(355, -11.5),
                  arrowprops=dict(arrowstyle="-|>", color="k", lw=1.6))
-    ax1.text(360, -8.5, "beam (default aim r=355 mm)", fontsize=9)
+    ax1.text(360, -8.5, "beam (default aim r=349 mm)", fontsize=9)
     ax1.set_xlim(0, 700); ax1.set_ylim(20.5, -13.5)
     ax1.set_xlabel("r along $\\phi=30°$ [mm]"); ax1.set_ylabel("z [mm]")
     ax1.set_title("True scale — bulged windows, frame, gas volumes")
@@ -307,7 +307,7 @@ def fig_xsec(outdir):
         ax3.text(1.05, y + 0.5, f"{L.name}   ({t_lab})", va="center", fontsize=9)
         y += 1
     ax3.text(1.05, y + 0.7,
-             f"windows: 40 µm mylar,\nsag {M.BULGE_FRONT:.0f} mm front / "
+             f"windows: {M.T_WINDOW*1e3:.0f} µm mylar,\nsag {M.BULGE_FRONT:.0f} mm front / "
              f"{M.BULGE_BACK:.0f} mm back", fontsize=9, va="bottom")
     ax3.set_xlim(0, 4.2); ax3.set_ylim(-0.5, y + 3)
     ax3.invert_yaxis(); ax3.axis("off")

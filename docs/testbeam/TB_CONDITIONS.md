@@ -14,6 +14,37 @@ When complete: (1) strike the TEMPLATE line above, (2) fill
 (3) ping the simulation side — every answer maps to a concrete sim setting
 (right column), and sim replication runs are blocked on this file.
 
+## Known so far (Alexandra, 2026-10-06)
+
+| item | value | sim setting |
+|---|---|---|
+| Beam | **150 GeV muons**, perpendicular to the chambers | `-p muon -e 150000`, `--gun-theta 0` |
+| Drift gap | **4 mm, same on every chamber** (frame V2; 3.964 mm of gas, `P2_MODEL.md`) | default |
+| Pressure | "1 atm overpressure" as stated. Read as ~atmospheric absolute pressure with a few-mbar overpressure; ⬜ confirm the mbar value (it sets the window sag) | `--bulge-front/back` |
+| Gases | **Ar/CO₂/iC₄H₁₀ 93/5/2** and **Ar/CF₄/iC₄H₁₀ 88/10/2** | `-g ArCO2Iso9352`, `-g ArCF4Iso` |
+| Front-end settings | peaking time **200 ns** (mostly) and **100 ns**; gain **3.0** and **4.5 mV/fC** | `vmm/` emulator |
+| Noise | use the **measured DREAM pedestal noise**; placeholder kept for a modelled noise if needed. VMM noise from the SNR code of the previous SPS campaign | Stage C |
+| Run list | ⬜ to pick, see "Runs wanted" below | `tb_run_manifest.csv` |
+
+### Runs wanted for the comparison
+
+For **each gas**, at 200 ns / the gain mostly used:
+
+1. **Mesh-HV scan at fixed drift field**: one run per point. Gives the gain
+   curve (cluster-charge MPV vs HV), the anchor for Stage B's absolute gain.
+2. **Drift-field scan at fixed mesh HV**, if taken: electron transparency
+   and the drift-velocity/time-spread check.
+3. **One high-statistics run at the working point**: cluster charge
+   spectrum, cluster size (pads/cluster), efficiency, residuals and timing.
+4. **The same working point at 100 ns and/or the other gain**: tests the
+   front-end emulator separately from the detector physics.
+5. **Pedestal/noise runs** taken alongside 1-3 (and the SNR-analysis output
+   from the previous campaign) for the noise model.
+
+Per run: run number, chamber(s) and which front-end (VMM or DREAM) each was
+read with, mesh/drift HV, gas, peaking time, gain, threshold, and whether
+neighbour logic was on.
+
 ---
 
 ## T0.1 Detector under test

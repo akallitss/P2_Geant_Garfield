@@ -144,6 +144,56 @@ higher-energy tail** (no shape).
 - Whether "50–150 keV" was a full-spectrum statement or the range of a
   dominant peak.
 
+### 🟡 Received 2026-10-06: `BkgHistograms.root` (Matthieu, P2Sim detTest, MMP2_v4)
+
+`../data/Simulations/background_mattieu_data/BkgHistograms.root`. Per MM
+layer i = 0, 1, 2: `hEnergy_i`, `hEnergy_response_i` (0–1 MeV, 5 keV bins),
+`h2EnergyTheta_i` (x = E [MeV], y = θ [deg], z = rate [MHz]), `h_map_xy_i`
+(TH2Poly), plus `h_rate_MM` / `hr_rate_MM` (totals). Matthieu: a photon is
+counted **once, when it first enters the drift gap**. Mostly that is the
+entrance face, but photons from behind are recorded at the exit face. The
+weights are a plain rate in MHz, with no further normalisation.
+
+What is in it (checked 2026-10-06):
+
+| | MM0 | MM1 | MM2 |
+|---|---|---|---|
+| photons entering the drift gap [MHz, whole layer] | 47 120 | 38 928 | 32 824 |
+| response-weighted (`hr_rate_MM`) [MHz] | 101.8 | 42.0 | 35.2 |
+| MC entries (each ≈ 9.33 MHz) | 5 052 | 4 177 | 3 522 |
+| mean E | 100 keV | 107 keV | 109 keV |
+| E < 20 keV | 3.6 % | 0.3 % | 0.2 % |
+| θ < 90° (in the 2D underflow) | **5.2 %** | 3.7 % | 3.1 % |
+| E > 1 MeV (overflow) | 0.4 % | 0.5 % | 0.5 % |
+| incidence (180° − θ): median / within 30° | 17.5° / 78 % | 16.5° / 82 % | 16.5° / 85 % |
+
+- The XY map covers the full 360° (all wedges, flat in φ to ±15 %) over
+  r 121–589 mm, roughly flat per unit area. Its integral is 1000 ×
+  `hr_rate_MM`, so it is the **response-weighted rate in kHz**, not the
+  photon flux (to confirm).
+- 5 000 entries spread over 200 × 90 bins is sparse: fine for 1D marginals,
+  thin for a correlated E–θ sampling.
+
+**What to ask Matthieu:**
+
+1. **θ convention**: measured from +z (beam axis)? θ in 90–180° means the
+   photons travel upstream. Which face of the MM (drift-cathode or PCB
+   side) faces +z in detTest? That decides whether a photon crosses the
+   cathode first or the PCB first in our model.
+2. **Extend θ to 0–180°**: 3–5 % of the flux (the "from behind" photons)
+   is in the underflow and has lost its angle.
+3. **Record the flux at the outer window instead of the drift gap**, if
+   possible. The current spectrum already includes his windows, cathode,
+   copper and FR4 (which differ from ours, `figures/p2_stack_vs_p2sim.png`).
+   Feeding it through our geometry would attenuate it twice.
+4. **Log or finer energy binning below 50 keV, and range up to ~10 MeV.**
+   Fluorescence lines and the soft part dominate the conversion response.
+5. **More statistics**, or the raw per-photon list (E, θ, φ, x, y, entry
+   face) instead of histograms. A list is what our generator can sample
+   from directly.
+6. Beam current / conditions the MHz refer to, and whether the map is
+   kHz response-weighted.
+
 ## 3. 🟡 Geometry — Alexandra's review
 
 Tracked in `P2_MODEL.md` §"Still to confirm"; production runs are gated on

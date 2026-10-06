@@ -34,9 +34,13 @@ DRIFT_OPENING = dict(r_in=110.0, r_out=600.0, edge_off=0.0, top_cut=540.01)
 
 # ── Active area (bulk mask, exact; informational) ───────────────────────────
 ACTIVE = dict(r_in=119.87, r_out=589.80)
+# Pad zone: pad field with straight edges 5 mm inside the 0/60 deg lines.
+# Carbon back frame = board outline -> this zone (Alexandra 2026-10-06).
+ZONE = dict(r_in=114.998, r_out=594.872, edge_off=-5.0, top_cut=540.01)
 
 # ── Defaults from SimConfig.hh (GUESS flags in docs/P2_MODEL.md) ────────────
-T_DRIFT      = 4.0      # frame V2 ledge height (2026-10-06); scans 1..4 mm
+T_DRIFT      = 3.964    # drift gas: 4.0 frame ledge - mesh; the frame stands
+                        # on the 150 um Dynamask (2026-10-06); scans 1..4 mm
 T_AMP        = 0.150    # confirmed 2026-08-05
 MESH_WIRE    = 0.018    # woven SS mesh 45/18 (2026-10-06): wire diameter
 MESH_OPEN    = 0.045    #   and opening; pitch = wire + opening = 63 um
@@ -163,7 +167,9 @@ def build_stack():
     frame = wedge_outline(**FRAME)
     opening = wedge_outline(**OPENING)
     drift_opening = wedge_outline(**DRIFT_OPENING)
+    zone = wedge_outline(**ZONE)
     open_c = centroid(opening)
+    zone_c = centroid(zone)
 
     z = 0.0
     layers = []
@@ -188,25 +194,28 @@ def build_stack():
     add("PCB_Cu_F",            T_CU_F,       "Cu(x0.98)", board, "#cc6619")
     add("PCB_FR4",             T_FR4,        "FR4",   board,   "#339933")
     add("PCB_Cu_B",            T_CU_B,       "Cu(x0.17)", board, "#cc6619")
-    frame_h = frame_h_win + T_DRIFT + T_MESH + T_AMP
+    frame_h = frame_h_win + T_DRIFT + T_MESH     # plastic frame stops on the Dynamask
     z_pcb_end = z
-    add("BackGas",            BACK_GAP,     "gas",   opening, "#8dd8f0", 0.15)
+    add("BackGas",            BACK_GAP,     "gas",   zone, "#8dd8f0", 0.15)
     z_back_win = z
 
     frames = [Layer("GasFrame", 0.0, frame_h_win, "plastic", frame,
                     "#e6e6d9", 0.9),
               Layer("GasFrameLedge", frame_h_win, frame_h - frame_h_win,
                     "plastic", frame, "#e6e6d9", 0.9),
-              Layer("GasFrameBack", z_pcb_end, BACK_GAP, "carbon", frame,
+              Layer("BulkDynamask", frame_h, T_AMP, "Dynamask", board,
+                    "#339933", 0.9),
+              Layer("GasFrameBack", z_pcb_end, BACK_GAP, "carbon", board,
                     "#4d4d4d", 0.9)]
+    holes = dict(GasFrame=opening, GasFrameLedge=drift_opening,
+                 BulkDynamask=drift_opening, GasFrameBack=zone)
     for f in frames:
-        f.hole = wedge_outline(**(DRIFT_OPENING if f.name == "GasFrameLedge"
-                                  else OPENING))
+        f.hole = holes[f.name]
 
     windows = (build_window("FrontWindow", 0.0, -1, BULGE_FRONT, opening, open_c)
-               + build_window("BackWindow", z_back_win, +1, BULGE_BACK, opening, open_c))
+               + build_window("BackWindow", z_back_win, +1, BULGE_BACK, zone, zone_c))
 
-    key_z = dict(front_window=0.0, pad_plane=frame_h, pcb_end=z_pcb_end,
+    key_z = dict(front_window=0.0, pad_plane=frame_h + T_AMP, pcb_end=z_pcb_end,
                  back_window=z_back_win,
                  z_min=-(BULGE_FRONT + T_WINDOW),
                  z_max=z_back_win + BULGE_BACK + T_WINDOW)

@@ -43,7 +43,7 @@ void PrintUsage() {
     std::cerr << "  -m <mode>        p2 | vacuum | full | sr90 | sr90nomm | lscalib | backscintcalib\n";
     std::cerr << "                   (default: p2)\n";
     std::cerr << "P2 mode options (see docs/P2_MODEL.md for defaults' provenance):\n";
-    std::cerr << "  --drift-gap <mm>    Drift gap, campaign scans 1..4  (default: 4)\n";
+    std::cerr << "  --drift-gap <mm>    Drift gas, campaign scans 1..4  (default: 3.964 = 4 mm frame)\n";
     std::cerr << "  --amp-gap <um>      Amplification gap  (default: 150)\n";
     std::cerr << "  --back-gap <mm>     Carbon back-frame depth = back gas gap,\n";
     std::cerr << "                      1 normally, up to 3 this production  (default: 1)\n";

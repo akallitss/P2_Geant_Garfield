@@ -50,7 +50,10 @@ std::string GeometryDigest(const SimConfig& cfg) {
        << ";cathMy="   << cfg.p2_cath_mylar_um
        << ";cathAl="   << cfg.p2_cath_al_um
        << ";fCu="      << cfg.p2_fcu_coverage
-       << ";bCu="      << cfg.p2_bcu_coverage;
+       << ";bCu="      << cfg.p2_bcu_coverage
+       // Envelope layout revision (outlines are P2Wedge.hh constants, not
+       // config): frame on the Dynamask, carbon back frame to the pad zone.
+       << ";envelope=v2-dynamask";
 
     // Pillars: the set name plus the generated table's size, for the same
     // reason as the pad map below -- a re-extraction must change the hash.
