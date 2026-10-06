@@ -43,12 +43,14 @@ void PrintUsage() {
     std::cerr << "  -m <mode>        p2 | vacuum | full | sr90 | sr90nomm | lscalib | backscintcalib\n";
     std::cerr << "                   (default: p2)\n";
     std::cerr << "P2 mode options (see docs/P2_MODEL.md for defaults' provenance):\n";
-    std::cerr << "  --drift-gap <mm>    Drift gap, campaign scans 1..4  (default: 3)\n";
+    std::cerr << "  --drift-gap <mm>    Drift gap, campaign scans 1..4  (default: 4)\n";
     std::cerr << "  --amp-gap <um>      Amplification gap  (default: 150)\n";
     std::cerr << "  --back-gap <mm>     Carbon back-frame depth = back gas gap,\n";
     std::cerr << "                      1 normally, up to 3 this production  (default: 1)\n";
     std::cerr << "  --bulge-front <mm>  Front window overpressure sag  (default: 10)\n";
-    std::cerr << "  --bulge-back <mm>   Back window overpressure sag  (default: 5)\n";
+    std::cerr << "  --bulge-back <mm>   Back window overpressure sag  (default: 10)\n";
+    std::cerr << "  --pillars <set>     Mesh-support pillars: saclay (V1 mask, det1-det4),\n";
+    std::cerr << "                      cern (det5), none  (default: saclay)\n";
     std::cerr << "  --gun-x <mm>        Beam aim x [gerber coords]  (default: 302.49)\n";
     std::cerr << "  --gun-y <mm>        Beam aim y [gerber coords]  (default: 174.64)\n";
     std::cerr << "                      Default is a pad-RING CENTRE (r=349.286, phi=30);\n";
@@ -125,6 +127,15 @@ int main(int argc, char** argv) {
         else if (arg == "--back-gap"    && i+1<argc) config.p2_back_gap_mm    = std::stod(argv[++i]);
         else if (arg == "--bulge-front" && i+1<argc) config.p2_bulge_front_mm = std::stod(argv[++i]);
         else if (arg == "--bulge-back"  && i+1<argc) config.p2_bulge_back_mm  = std::stod(argv[++i]);
+        else if (arg == "--pillars"     && i+1<argc) {
+            config.p2_pillars = argv[++i];
+            if (config.p2_pillars != "saclay" && config.p2_pillars != "cern" &&
+                config.p2_pillars != "none") {
+                std::cerr << "Unknown --pillars set: " << config.p2_pillars
+                          << " (saclay | cern | none)\n";
+                return 1;
+            }
+        }
         else if (arg == "--gun-x"       && i+1<argc) config.p2_gun_x_mm       = std::stod(argv[++i]);
         else if (arg == "--gun-y"       && i+1<argc) config.p2_gun_y_mm       = std::stod(argv[++i]);
         else if (arg == "--gun-theta"   && i+1<argc) config.p2_gun_theta_deg  = std::stod(argv[++i]);
@@ -189,6 +200,7 @@ int main(int argc, char** argv) {
     if (config.mode == SimMode::kP2Wedge) {
         std::cout << "  Drift gap      : " << config.p2_drift_mm << " mm\n";
         std::cout << "  Amp gap        : " << config.p2_amp_um << " um\n";
+        std::cout << "  Pillars        : " << config.p2_pillars << "\n";
         std::cout << "  Gun aim (x,y)  : (" << config.p2_gun_x_mm << ", "
                   << config.p2_gun_y_mm << ") mm\n";
         std::cout << "  Gun angle      : theta " << config.p2_gun_theta_deg

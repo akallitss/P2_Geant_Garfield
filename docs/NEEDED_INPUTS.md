@@ -212,7 +212,7 @@ What we already have in-repo, and what is still missing:
 | Pillar **pattern** from the CERN bulk mask `design/gerbers/bulk_masks_CERN/P2_Mask2.gbr` | ✅ Ø **0.5 mm**, pitch **2.000 mm** exact, **41 366** pillars, **4.8 %** of the amp gap (`P2_GEOMETRY.md` §2) |
 | Pillar **material** | ✅ **Dynamask** photoimageable dry film, ρ ≈ 1.2–1.4 g/cm³, ε_r ≈ 3.9 — *not* kapton/FR4 (`HANDOFF_MX17_RESPONSE.md` §2.4) |
 | Pillar **map actually used by the analysis** (as-fabricated positions / dead-channel-adjacent pillars, in whatever form `P2_Basket_Analysis` consumes) | ⬜ **NEEDED — this item** |
-| Pillars in the Geant4 geometry | ⬜ not implemented (amp gap is pure gas today) |
+| Pillars in the Geant4 geometry | ✅ 2026-10-06: `--pillars saclay` (V1 mask, default) / `cern` / `none`; see `P2_MODEL.md`. Stage B dead spots still open |
 
 Why the mask alone may not be enough, i.e. why to go get the analysis's map:
 the gerber gives the *design* pattern, while the analysis presumably carries

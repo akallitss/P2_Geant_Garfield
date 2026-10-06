@@ -42,26 +42,29 @@ struct SimConfig {
     // ── P2 wedge mode ─────────────────────────────────────────────────────
     // Values marked GUESS are not backed by design data — see docs/P2_MODEL.md
     // for the full assumptions table and what to confirm with the collaboration.
-    double p2_drift_mm       = 3.0;    // drift gap; 3 mm confirmed baseline (2026-08-05).
+    double p2_drift_mm       = 4.0;    // drift gap; 4 mm = frame V2 ledge height
+                                       // (P2_Frame_V2.0.stp, Alexandra 2026-10-06).
                                        // Campaign will scan 1..4 mm via --drift-gap.
     double p2_amp_um         = 150.0;  // amplification gap — confirmed 150 um (2026-08-05)
-    double p2_mesh_wire_um   = 19.0;   // woven SS mesh wire diameter — confirmed
-    double p2_mesh_open_um   = 48.0;   // mesh opening (pitch = wire + opening = 67 um) —
-                                       // confirmed "48x19" (Alexandra 2026-08-05); modelled
-                                       // as a 2*wire slab of effective-density steel
-    double p2_front_gap_mm   = 4.0;    // outer window -> first drift foil. Window->mesh
-                                       // stays 8 mm total (frame STEP: ledge 3 -> top 8);
-                                       // 1 mm now sits between the two drift foils.
-    double p2_cath_gap_mm    = 1.0;    // gap between the two drift-cathode mylar foils
-                                       // ("maybe 1 mm", Alexandra 2026-08-05)
+    double p2_mesh_wire_um   = 18.0;   // woven SS mesh 45/18: wire diameter and
+    double p2_mesh_open_um   = 45.0;   //   opening, pitch 63 um (Alexandra 2026-10-06;
+                                       //   supersedes "48x19"). Modelled as a 2*wire slab
+                                       //   of effective-density steel
+    double p2_front_gap_mm   = 3.879;  // outer window -> drift foil = frame top (8.0) -
+                                       // ledge (4.0) - foil (0.121), P2_Frame_V2.0.stp
+    double p2_cath_gap_mm    = 0.0;    // 0 = ONE drift-cathode foil (2026-10-06).
+                                       // > 0 = the old two-foil model, foils this far apart
     double p2_back_gap_mm    = 1.0;    // PCB back -> back window = carbon back-frame depth.
                                        // Normally 1 mm, up to 3 mm in this production
                                        // (Alexandra 2026-08-05); mylar glued on its rear face.
     double p2_bulge_front_mm = 10.0;   // overpressure sag — Hencky estimate at ~3 mbar,
-    double p2_bulge_back_mm  = 5.0;    //   p in 1..10 mbar -> 7..15 mm; revisit
-    double p2_window_um      = 40.0;   // outer containment mylar (MX17-like) — confirm
-    double p2_cath_mylar_um  = 12.0;   // each drift-cathode mylar foil — thickness GUESS
-    double p2_cath_al_um     = 0.1;    // aluminization of the drift-gas-side foil — GUESS
+    double p2_bulge_back_mm  = 10.0;   //   p in 1..10 mbar -> 7..15 mm; 10 mm both
+                                       //   sides (Alexandra 2026-10-06)
+    double p2_window_um      = 10.0;   // outer containment mylar (Alexandra 2026-10-06)
+    std::string p2_pillars   = "saclay"; // mesh-support pillar mask: "saclay" (V1,
+                                       //   det1-det4), "cern" (det5), "none"
+    double p2_cath_mylar_um  = 120.0;  // drift-cathode mylar (Alexandra 2026-10-06)
+    double p2_cath_al_um     = 1.0;    // its aluminization, facing the drift gas
     double p2_fcu_coverage   = 0.983;  // Cu area fraction over the active area, measured
     double p2_bcu_coverage   = 0.174;  //   from the gerbers (B.Cu = signal lines, not a
                                        //   plane; radial 0.03->0.26). Layers modelled as

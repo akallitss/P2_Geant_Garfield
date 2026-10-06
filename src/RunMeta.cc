@@ -3,6 +3,7 @@
 #include "RunMeta.hh"
 #include "GasMixtures.hh"
 #include "P2PadMap.hh"
+#include "P2Pillars.hh"
 
 #include <cstdint>
 #include <iomanip>
@@ -50,6 +51,14 @@ std::string GeometryDigest(const SimConfig& cfg) {
        << ";cathAl="   << cfg.p2_cath_al_um
        << ";fCu="      << cfg.p2_fcu_coverage
        << ";bCu="      << cfg.p2_bcu_coverage;
+
+    // Pillars: the set name plus the generated table's size, for the same
+    // reason as the pad map below -- a re-extraction must change the hash.
+    os << ";pillars=" << cfg.p2_pillars;
+    if (cfg.p2_pillars == "saclay")
+        os << ':' << P2::kNPillarsSaclay << '+' << P2::kNPillarsBigSaclay;
+    else if (cfg.p2_pillars == "cern")
+        os << ':' << P2::kNPillarsCern << '+' << P2::kNPillarsBigCern;
 
     // Readout copper. The flag alone is not enough: the pad grid and the
     // per-band coverages live in the generated include/P2PadMap.hh, so a

@@ -24,29 +24,32 @@ SECTOR_DEG = 60.0
 # ── Readout PCB stack (Stack_Up_P2.txt, exact) ──────────────────────────────
 T_CU_F, T_FR4, T_CU_B = 0.018, 0.200, 0.018
 
-# ── Gas frame (P2_Frame_V1_3mm.stp bbox analysis; opening ≈, see docs) ──────
-FRAME = dict(r_in=104.5, r_out=605.5, edge_off=7.5, top_cut=537.5)
-OPENING = dict(r_in=107.0, r_out=603.0, edge_off=0.0, top_cut=535.0)
+# ── Gas frame (P2_Frame_V2.0.stp, 4 mm drift variant — exact, see docs) ────
+# 8 mm body; the opening steps out by 3 mm at the drift-foil ledge 4.0 mm
+# above the board. OPENING = window side, DRIFT_OPENING = board side.
+FRAME_H, FRAME_LEDGE_Z = 8.0, 4.0
+FRAME = dict(r_in=95.0, r_out=615.0, edge_off=10.0, top_cut=540.01)
+OPENING = dict(r_in=107.0, r_out=603.0, edge_off=3.0, top_cut=540.01)
+DRIFT_OPENING = dict(r_in=110.0, r_out=600.0, edge_off=0.0, top_cut=540.01)
 
 # ── Active area (bulk mask, exact; informational) ───────────────────────────
 ACTIVE = dict(r_in=119.87, r_out=589.80)
 
 # ── Defaults from SimConfig.hh (GUESS flags in docs/P2_MODEL.md) ────────────
-T_DRIFT      = 3.0      # confirmed baseline; campaign scans 1..4 mm
+T_DRIFT      = 4.0      # frame V2 ledge height (2026-10-06); scans 1..4 mm
 T_AMP        = 0.150    # confirmed 2026-08-05
-MESH_WIRE    = 0.019    # woven SS mesh: wire diameter — confirmed 2026-08-05
-MESH_OPEN    = 0.048    # opening ("48x19"); pitch = wire + opening = 67 um
+MESH_WIRE    = 0.018    # woven SS mesh 45/18 (2026-10-06): wire diameter
+MESH_OPEN    = 0.045    #   and opening; pitch = wire + opening = 63 um
 T_MESH       = 2 * MESH_WIRE          # weave height, effective-density slab
 MESH_FILL    = math.pi * MESH_WIRE / (4 * (MESH_WIRE + MESH_OPEN))  # ~0.22
-FRONT_GAP    = 4.0      # window -> first drift foil (window->mesh still 8 mm,
-                        # frame STEP: ledge z=3 -> top z=8)
-CATH_GAP     = 1.0      # between the two drift-cathode foils ("maybe 1 mm")
+FRONT_GAP    = 3.879    # window -> drift foil = frame top 8.0 - ledge 4.0 - foil
+CATH_GAP     = 0.0      # 0 = one drift foil (2026-10-06); > 0 = old two-foil model
 BACK_GAP     = 1.0      # carbon back-frame depth; 1 mm normal, <=3 this prod.
-BULGE_FRONT  = 10.0     # GUESS
-BULGE_BACK   = 5.0      # GUESS
-T_WINDOW     = 0.040    # MX17-like
-T_CATH_MYLAR = 0.012    # each foil — thickness GUESS
-T_CATH_AL    = 0.0001   # on the drift-gas side of the downstream foil
+BULGE_FRONT  = 10.0     # overpressure sag, both sides (Alexandra 2026-10-06)
+BULGE_BACK   = 10.0
+T_WINDOW     = 0.010    # outer mylar (Alexandra 2026-10-06)
+T_CATH_MYLAR = 0.120    # drift-cathode mylar (2026-10-06)
+T_CATH_AL    = 0.001    # its aluminization, facing the drift gas
 FCU_COVERAGE = 0.983    # Cu area fraction over the active area, from gerbers
 BCU_COVERAGE = 0.174    #   (B.Cu = signal lines; radial 0.03->0.26);
                         #   scripts/gerber/analyze_cu_coverage.py
@@ -159,6 +162,7 @@ def build_stack():
     board = wedge_outline(**BOARD)
     frame = wedge_outline(**FRAME)
     opening = wedge_outline(**OPENING)
+    drift_opening = wedge_outline(**DRIFT_OPENING)
     open_c = centroid(opening)
 
     z = 0.0
@@ -170,28 +174,34 @@ def build_stack():
         z += t
 
     add("FrontGas",            FRONT_GAP,    "gas",   opening, "#8dd8f0", 0.15)
-    add("DriftCathode_Mylar1", T_CATH_MYLAR, "mylar", opening, "#a8e0a8")
-    add("DriftCathode_Gas",    CATH_GAP,     "gas",   opening, "#8dd8f0", 0.15)
-    add("DriftCathode_Mylar2", T_CATH_MYLAR, "mylar", opening, "#a8e0a8")
+    if CATH_GAP > 0:
+        add("DriftCathode_Mylar1", T_CATH_MYLAR, "mylar", opening, "#a8e0a8")
+        add("DriftCathode_Gas",    CATH_GAP,     "gas",   opening, "#8dd8f0", 0.15)
+        add("DriftCathode_Mylar2", T_CATH_MYLAR, "mylar", opening, "#a8e0a8")
+    else:
+        add("DriftCathode_Mylar",  T_CATH_MYLAR, "mylar", opening, "#a8e0a8")
     add("DriftCathode_Al",     T_CATH_AL,    "Al",    opening, "#b0b0b0")
-    add("DriftGas",            T_DRIFT,      "gas",   opening, "#3380ff", 0.30)
-    add("Micromesh",           T_MESH,       "steel(eff)", opening, "#808080")
-    add("AmpGas",              T_AMP,        "gas",   opening, "#ff4d4d", 0.35)
+    frame_h_win = z
+    add("DriftGas",            T_DRIFT,      "gas",   drift_opening, "#3380ff", 0.30)
+    add("Micromesh",           T_MESH,       "steel(eff)", drift_opening, "#808080")
+    add("AmpGas",              T_AMP,        "gas",   drift_opening, "#ff4d4d", 0.35)
     add("PCB_Cu_F",            T_CU_F,       "Cu(x0.98)", board, "#cc6619")
     add("PCB_FR4",             T_FR4,        "FR4",   board,   "#339933")
     add("PCB_Cu_B",            T_CU_B,       "Cu(x0.17)", board, "#cc6619")
-    frame_h = (FRONT_GAP + T_CATH_MYLAR + CATH_GAP + T_CATH_MYLAR
-               + T_CATH_AL + T_DRIFT + T_MESH + T_AMP)
+    frame_h = frame_h_win + T_DRIFT + T_MESH + T_AMP
     z_pcb_end = z
     add("BackGas",            BACK_GAP,     "gas",   opening, "#8dd8f0", 0.15)
     z_back_win = z
 
-    frames = [Layer("GasFrame", 0.0, frame_h, "plastic", frame,
+    frames = [Layer("GasFrame", 0.0, frame_h_win, "plastic", frame,
                     "#e6e6d9", 0.9),
+              Layer("GasFrameLedge", frame_h_win, frame_h - frame_h_win,
+                    "plastic", frame, "#e6e6d9", 0.9),
               Layer("GasFrameBack", z_pcb_end, BACK_GAP, "carbon", frame,
                     "#4d4d4d", 0.9)]
     for f in frames:
-        f.hole = wedge_outline(**OPENING)
+        f.hole = wedge_outline(**(DRIFT_OPENING if f.name == "GasFrameLedge"
+                                  else OPENING))
 
     windows = (build_window("FrontWindow", 0.0, -1, BULGE_FRONT, opening, open_c)
                + build_window("BackWindow", z_back_win, +1, BULGE_BACK, opening, open_c))
