@@ -274,7 +274,7 @@ def fig_xsec(outdir):
 
     ax1.annotate("", xy=(355, -1.5), xytext=(355, -11.5),
                  arrowprops=dict(arrowstyle="-|>", color="k", lw=1.6))
-    ax1.text(360, -8.5, "beam (default aim r=355 mm)", fontsize=9)
+    ax1.text(360, -8.5, "beam (default aim r=349 mm)", fontsize=9)
     ax1.set_xlim(0, 700); ax1.set_ylim(20.5, -13.5)
     ax1.set_xlabel("r along $\\phi=30°$ [mm]"); ax1.set_ylabel("z [mm]")
     ax1.set_title("True scale — bulged windows, frame, gas volumes")
@@ -307,7 +307,7 @@ def fig_xsec(outdir):
         ax3.text(1.05, y + 0.5, f"{L.name}   ({t_lab})", va="center", fontsize=9)
         y += 1
     ax3.text(1.05, y + 0.7,
-             f"windows: 40 µm mylar,\nsag {M.BULGE_FRONT:.0f} mm front / "
+             f"windows: {M.T_WINDOW*1e3:.0f} µm mylar,\nsag {M.BULGE_FRONT:.0f} mm front / "
              f"{M.BULGE_BACK:.0f} mm back", fontsize=9, va="bottom")
     ax3.set_xlim(0, 4.2); ax3.set_ylim(-0.5, y + 3)
     ax3.invert_yaxis(); ax3.axis("off")
@@ -333,7 +333,7 @@ EXPLODE_GROUPS = {  # layer-name prefix -> explode group index
 # Label -> the explode groups it points at, for the annotated exploded views.
 EXPLODE_LABELS = [  # wrapped so a big font still fits a narrow column
     ("front window\n(bulged mylar)",                   (-2,)),
-    ("drift cathode (2 foils)\n+ drift gas + frame",   (0, 1)),
+    ("drift cathode\n+ drift gas + frame",   (0, 1)),
     ("mesh + amp gap",                                 (2,)),
     ("readout PCB\n(Cu/FR4/Cu)",                       (3,)),
     ("back gas\n+ carbon back frame",                  (4,)),
@@ -544,22 +544,19 @@ def fig_questions(outdir):
 
     # (key, label, thickness text, height, facecolor, status)
     rows = [
-        ("fwin",  "front gas window — mylar", "40 µm (?)",  0.95, "#63b8d8", C_GUESS),
-        ("fgas",  "front gas gap",            "4 mm",       1.20, "#dff2fa", C_ASSUME),
-        ("cath",  "drift cathode foil 1 — mylar", "12 µm (?)",
-                                                            0.50, "#a8e0a8", C_GUESS),
-        ("cgap",  "gas between the two foils", "1 mm",      0.75, "#dff2fa", C_OK),
-        ("cath2", "drift foil 2 — Al on gas side", "12 µm (?)",
-                                                            0.50, "#a8e0a8", C_GUESS),
-        ("drift", "DRIFT GAS",                "3 mm",       1.30, "#b3ccff", C_OK),
-        ("mesh",  "micromesh — woven SS 48/19 µm",
+        ("fwin",  "front gas window — mylar", "10 µm",      0.95, "#63b8d8", C_OK),
+        ("fgas",  "front gas gap",            "3.88 mm",    1.20, "#dff2fa", C_MEAS),
+        ("cath",  "drift cathode — Al-mylar", "120 µm + 1 µm Al",
+                                                            0.60, "#a8e0a8", C_OK),
+        ("drift", "DRIFT GAS",                "4 mm",       1.30, "#b3ccff", C_MEAS),
+        ("mesh",  "micromesh — woven SS 45/18 µm",
                                               "",           0.55, "#9e9e9e", C_OK),
         ("amp",   "amplification gap",        "150 µm",     0.80, "#ffc4c4", C_OK),
         ("fcu",   "F.Cu readout pads",        "18 µm × 0.98", 0.45, "#cc6619", C_MEAS),
         ("fr4",   "FR4 core",                 "200 µm",     0.70, "#5aa85a", C_MEAS),
         ("bcu",   "B.Cu signal lines",        "18 µm × 0.17", 0.45, "#cc6619", C_MEAS),
-        ("bgas",  "back gas gap (carbon frame)", "1 mm",   1.00, "#dff2fa", C_ASSUME),
-        ("bwin",  "back gas window — mylar",  "40 µm (?)",  0.95, "#63b8d8", C_GUESS),
+        ("bgas",  "back gas gap (carbon frame)", "1 mm",   1.00, "#dff2fa", C_OK),
+        ("bwin",  "back gas window — mylar",  "10 µm",      0.95, "#63b8d8", C_OK),
     ]
 
     gap = 0.07
@@ -621,12 +618,12 @@ def fig_questions(outdir):
         ax.text(XL - 0.55, yy + hh/2, txt, ha="right", va="center",
                 fontsize=10.5, color=color,
                 bbox=dict(boxstyle="round,pad=0.35", fc="white", ec=color, lw=1.4))
-    left_note("drift", "✓ 3 mm confirmed baseline\n(campaign will scan 1–4 mm)", C_OK)
+    left_note("drift", "✓ frame V2 ledge height (STEP)\n(campaign will scan 1–4 mm)", C_MEAS)
     left_note("amp",   "✓ 150 µm confirmed", C_OK)
-    left_note("mesh",  "✓ woven SS: 19 µm wire, 48 µm opening;\nmodelled as 38 µm effective-density slab\n(~51 % optical transparency not modelled)", C_OK)
+    left_note("mesh",  "✓ woven SS: 18 µm wire, 45 µm opening;\nmodelled as 36 µm effective-density slab\n(~51 % optical transparency not modelled)", C_OK)
     left_note("fr4",   "✓ PCB from Stack_Up_P2.txt; Cu layers\ndensity-scaled by gerber-measured coverage\n(B.Cu radial 0.03 → 0.26, mean 0.17)", C_MEAS)
-    left_note("fgas",  "✓ window → mesh = 8 mm from frame STEP\n(\"front 3 mm\" = ledge → drift foil);\n2-foil cathode leaves 4 mm window → foil 1", C_OK)
-    left_note("bgas",  "✓ carbon frame glued to PCB back,\nmylar on its rear face; 1 mm assumed\n(a few of this production are 3 mm)", C_OK)
+    left_note("fgas",  "✓ frame STEP V2: 8 mm body, foil on the\nledge 4 mm above the board; one foil\n(two-foil model retired 2026-10-06)", C_MEAS)
+    left_note("bgas",  "✓ carbon frame glued to PCB back,\nmylar on its rear face; 1 mm confirmed\n(a few of this production are 3 mm)", C_OK)
 
     # ── right side: the questions ─────────────────────────────────────────
     def qbox(n, y_center, txt, color, targets):
@@ -642,19 +639,20 @@ def fig_questions(outdir):
                                         connectionstyle="arc3,rad=-0.08"))
 
     qbox(1, 10.75,
-         "Foil thicknesses: outer windows (40 µm assumed) and the\n"
-         "two drift-cathode foils (12 µm each assumed)?\n"
-         "Foil separation \"maybe 1 mm\" — sim uses exactly 1 mm.",
-         C_GUESS, ["fwin", "cath", "cath2"])
+         "Carbon back frame: inner outline (opening) and wall width?\n"
+         "Depth 1 mm confirmed; sim assumes the front frame's\n"
+         "footprint and window-side opening (r 107→603, edges +3).",
+         C_ASSUME, ["bgas"])
     qbox(2, 8.55,
-         "Gas overpressure value? (~1–10 mbar?)\n"
-         "Sets the window bulge — sim assumes ~3 mbar\n"
-         "→ ≈10 mm sag front, ≈5 mm back (Hencky estimate)",
-         C_ASSUME, ["fwin"])
+         "Window sag 10 mm on both sides (2026-10-06):\n"
+         "modelled as a 6-step terraced dome of mylar,\n"
+         "chamber gas filling it.",
+         C_OK, ["fwin", "bwin"])
     qbox(3, 6.55,
-         "Baseline gas mixture & operating point? (all gas volumes)\n"
-         "(sim default: Ar/iC₄H₁₀ 95/5, 1 atm + overpressure)",
-         C_ASSUME, [])
+         "What does the frame sit on — bare PCB or the bulk border?\n"
+         "STEP ledge is 4.0 mm above the frame's own face: drift gas is\n"
+         "3.81 mm (bare PCB) to ~3.96 mm (bulk); sim uses 4.0 mm.",
+         C_ASSUME, ["drift"])
 
     # legend for the status colors
     for i, (c, lab) in enumerate([

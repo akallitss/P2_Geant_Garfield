@@ -29,22 +29,40 @@ constexpr double kTCuF = 0.018;   // F.Cu readout pads
 constexpr double kTFR4 = 0.200;   // FR4 core
 constexpr double kTCuB = 0.018;   // B.Cu ground plane
 
-// ── Gas frame (from P2_Frame_V1_3mm.stp: body z = 0..8 mm on the board,
-//    drift-mylar ledge at z = 3 mm, inner walls ~2.5 mm, edge walls 7.5 mm,
-//    footprint r ~ 104.5..605.5). Opening dims are read off dominant point
-//    clusters and are approximate — see docs/P2_MODEL.md. ─────────────────
-constexpr double kFrameRIn        = 104.5;
-constexpr double kFrameROut       = 605.5;
-constexpr double kFrameEdgeOffset = 7.5;
-constexpr double kFrameTopCut     = 537.5;
-constexpr double kOpenRIn         = 107.0;   // frame inner opening = window
-constexpr double kOpenROut        = 603.0;
-constexpr double kOpenEdgeOffset  = 0.0;
-constexpr double kOpenTopCut      = 535.0;
+// ── Gas frame (4 mm drift variant, P2_Frame_V2.0.stp — exact, sectioned in
+//    FreeCAD 2026-10-06, docs/P2_GEOMETRY.md §5). One 8 mm body on the
+//    board; its opening steps out by 3 mm at a ledge 4.0 mm above the board,
+//    and the drift-cathode foil sits on that ledge. Same section at every phi.
+//    No profile reaches the board's y = 540 chord, so the top cut is inert.
+//    Not modelled: the ~2.4 mm glue groove in the board face, the Ø2 mm gas
+//    channel at z = 3.5, the mounting ears outside r = 615. ─────────────────
+constexpr double kFrameH          = 8.0;     // board face -> window face
+constexpr double kFrameLedgeZ     = 4.0;     // board face -> drift-foil ledge
+constexpr double kFrameRIn        = 95.0;    // footprint
+constexpr double kFrameROut       = 615.0;
+constexpr double kFrameEdgeOffset = 10.0;
+constexpr double kFrameTopCut     = kBoardTopCut;
+constexpr double kOpenRIn         = 107.0;   // window side (ledge -> window):
+constexpr double kOpenROut        = 603.0;   //   window, front gas, drift foil
+constexpr double kOpenEdgeOffset  = 3.0;
+constexpr double kOpenTopCut      = kBoardTopCut;
+constexpr double kDriftOpenRIn    = 110.0;   // board side (board -> ledge):
+constexpr double kDriftOpenROut   = 600.0;   //   drift gas, mesh, amp gap
+constexpr double kDriftOpenEdgeOffset = 0.0;
 
 // ── Active area (bulk mask, exact; informational) ────────────────────────
 constexpr double kActiveRIn  = 119.87;
 constexpr double kActiveROut = 589.80;
+
+// ── Pad zone: the copper pad field (P2PadMap.hh) with straight edges 5.0 mm
+//    inside the 0 / 60 deg lines (5.00 / 5.12 mm measured from the pad
+//    table). The Saclay pillar field fills the same zone. The carbon back
+//    frame runs from the board outline in to this zone (Alexandra
+//    2026-10-06: "exactly the perimeter of the bare PCB without the active
+//    zone"), so the back gas and back window use it as their outline. ───────
+constexpr double kZoneRIn         = 114.998;
+constexpr double kZoneROut        = 594.872;
+constexpr double kZoneEdgeOffset  = -5.0;    // negative = inward
 
 // Closed CCW polygon of a wedge profile: annular sector r in [rIn, rOut],
 // phi in [0, 60] deg, both radial edges offset outward perpendicular by

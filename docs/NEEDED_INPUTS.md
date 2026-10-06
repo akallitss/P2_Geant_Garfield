@@ -144,6 +144,72 @@ higher-energy tail** (no shape).
 - Whether "50–150 keV" was a full-spectrum statement or the range of a
   dominant peak.
 
+### 🟡 Received 2026-10-06: `BkgHistograms.root` (Matthieu, P2Sim detTest, MMP2_v4)
+
+`../data/Simulations/background_mattieu_data/BkgHistograms.root`. Per MM
+layer i = 0, 1, 2: `hEnergy_i`, `hEnergy_response_i` (0–1 MeV, 5 keV bins),
+`h2EnergyTheta_i` (x = E [MeV], y = θ [deg], z = rate [MHz]), `h_map_xy_i`
+(TH2Poly), plus `h_rate_MM` / `hr_rate_MM` (totals). Matthieu: a photon is
+counted **once, when it first enters the drift gap**. Mostly that is the
+entrance face, but photons from behind are recorded at the exit face. The
+weights are a plain rate in MHz, with no further normalisation.
+
+What is in it (checked 2026-10-06):
+
+| | MM0 | MM1 | MM2 |
+|---|---|---|---|
+| photons entering the drift gap [MHz, whole layer] | 47 120 | 38 928 | 32 824 |
+| response-weighted (`hr_rate_MM`) [MHz] | 101.8 | 42.0 | 35.2 |
+| MC entries (each ≈ 9.33 MHz) | 5 052 | 4 177 | 3 522 |
+| mean E | 100 keV | 107 keV | 109 keV |
+| E < 20 keV | 3.6 % | 0.3 % | 0.2 % |
+| θ < 90° (in the 2D underflow) | **5.2 %** | 3.7 % | 3.1 % |
+| E > 1 MeV (overflow) | 0.4 % | 0.5 % | 0.5 % |
+| incidence (180° − θ): median / within 30° | 17.5° / 78 % | 16.5° / 82 % | 16.5° / 85 % |
+
+- The XY map covers the full 360° (all wedges, flat in φ to ±15 %) over
+  r 121–589 mm, roughly flat per unit area. Its integral is 1000 ×
+  `hr_rate_MM`, so it is the **response-weighted rate in kHz**, not the
+  photon flux (to confirm).
+- 5 000 entries spread over 200 × 90 bins is sparse: fine for 1D marginals,
+  thin for a correlated E–θ sampling.
+
+**What the campaign actually uses it for** (revised 2026-10-06): weighting
+the mono-energetic photon scans into the real background spectrum, to set the
+upper ADC cut. Energy spectrum + angles in the file are enough for that; the
+earlier list of format requests (θ range, counting plane, binning, stats) is
+dropped — none changes the e/γ answer at the level we need.
+
+**Signal electrons:** 100 MeV (Alexandra 2026-10-06). At 30–150 MeV the
+gas deposit is on the Fermi plateau, so the energy choice does not matter;
+the incidence angle does (`--gun-theta` scan).
+
+**Origin of the soft photons** (`../Downloads/Bounce_lowE_map.pdf`,
+Matthieu 2026-10-06, last bounce of low-energy photons, geometry
+`sb_Target_500_Det0_-2700_Diff_300_B_70`):
+
+| | MM0 | MM1 | MM2 |
+|---|---|---|---|
+| low-E photon rate | 2.0 GHz | 337 MHz | 234 MHz |
+| chamber wall (R ≈ 1.1 m, mostly the "rings") | 82 % | 56 % | 56 % |
+| Kevlar window | 7 % | 19 % | 16 % |
+| detector chamber | 7.5 % | 14 % | 16 % |
+| target, pipe, mask | 2 % | 8 % | 4 % |
+
+Matthieu: they are stopped by (probably) the readout plane. That is the same
+picture as the energy split above: in MM0, the 3.7 % of photons below 20 keV
+make 55 % of the response; behind MM0 the soft part drops to ~10 %.
+Caveat: his readout is 50 µm + 50 µm of solid copper. Ours is 18 µm pads +
+18 µm traces at ~17 % coverage, about 5× less copper, so in the real
+detector MM0's readout plane passes much more of the soft component to MM1.
+Check with our Geant4 by firing 10–20 keV photons from behind before relying
+on the layer ordering.
+
+**Still worth asking Matthieu** (only these):
+1. What the MHz assume (beam current), so photon and electron rates can be
+   put on one footing for the fake-rate estimate.
+2. The energy cut defining "low E" in the bounce map.
+
 ## 3. 🟡 Geometry — Alexandra's review
 
 Tracked in `P2_MODEL.md` §"Still to confirm"; production runs are gated on
@@ -212,7 +278,7 @@ What we already have in-repo, and what is still missing:
 | Pillar **pattern** from the CERN bulk mask `design/gerbers/bulk_masks_CERN/P2_Mask2.gbr` | ✅ Ø **0.5 mm**, pitch **2.000 mm** exact, **41 366** pillars, **4.8 %** of the amp gap (`P2_GEOMETRY.md` §2) |
 | Pillar **material** | ✅ **Dynamask** photoimageable dry film, ρ ≈ 1.2–1.4 g/cm³, ε_r ≈ 3.9 — *not* kapton/FR4 (`HANDOFF_MX17_RESPONSE.md` §2.4) |
 | Pillar **map actually used by the analysis** (as-fabricated positions / dead-channel-adjacent pillars, in whatever form `P2_Basket_Analysis` consumes) | ⬜ **NEEDED — this item** |
-| Pillars in the Geant4 geometry | ⬜ not implemented (amp gap is pure gas today) |
+| Pillars in the Geant4 geometry | ✅ 2026-10-06: `--pillars saclay` (V1 mask, default) / `cern` / `none`; see `P2_MODEL.md`. Stage B dead spots still open |
 
 Why the mask alone may not be enough, i.e. why to go get the analysis's map:
 the gerber gives the *design* pattern, while the analysis presumably carries

@@ -69,14 +69,27 @@ const std::vector<Component> kComponents = {
 // previously produced sample can still be reproduced.
 //
 // Naming: where a pair of gases appears at more than one ratio the ratio is
-// part of the name. `NeIso` (95/5) is inherited and is NOT one of the
-// campaign points -- the campaign uses NeIso9010 and NeIso8020. Nothing
-// resolves a bare "NeIso" to a campaign gas by accident.
+// part of the name, except for the 95/5 mixtures `ArIso` and `NeIso`,
+// whose names predate the ratio convention and are kept so old samples
+// still resolve.
 const std::vector<Mixture> kMixtures = {
     // ── campaign gases ──────────────────────────────────────────────────
     {"ArIso", "Ar/iC4H10 95/5",
      {{"Ar", 0.95}, {"iC4H10", 0.05}}, true,
      "argon co-baseline"},
+
+    // Experiment candidates and SPS test-beam gases (Alexandra 2026-10-06):
+    // P2 wants Ar/iso 95/5 + 90/10 and Ne/iso 95/5 + 85/15; the 2026 SPS
+    // beam test ran Ar/CO2/iso 93/5/2 and Ar/CF4/iso 88/10/2. Stage B has no
+    // transport numbers for the new ones yet -- it falls back to argon-like
+    // placeholders and flags it (stage_b/gas.py) until Magboltz tables exist.
+    {"ArIso9010", "Ar/iC4H10 90/10",
+     {{"Ar", 0.90}, {"iC4H10", 0.10}}, true,
+     "experiment candidate; Stage B transport pending (P0.10)"},
+
+    {"NeIso8515", "Ne/iC4H10 85/15",
+     {{"Ne", 0.85}, {"iC4H10", 0.15}}, true,
+     "experiment candidate; Stage B transport pending (P0.10)"},
 
     {"ArCO2Iso9352", "Ar/CO2/iC4H10 93/5/2",
      {{"Ar", 0.93}, {"CO2", 0.05}, {"iC4H10", 0.02}}, true,
@@ -110,8 +123,8 @@ const std::vector<Mixture> kMixtures = {
 
     // ── inherited from MX17 ─────────────────────────────────────────────
     {"NeIso", "Ne/iC4H10 95/5",
-     {{"Ne", 0.95}, {"iC4H10", 0.05}}, false,
-     "inherited, not a campaign point (campaign uses NeIso9010/NeIso8020)"},
+     {{"Ne", 0.95}, {"iC4H10", 0.05}}, true,
+     "experiment candidate (2026-10-06); Stage B transport pending (P0.10)"},
 
     {"ArCF4", "Ar/CF4 90/10",
      {{"Ar", 0.90}, {"CF4", 0.10}}, false, "inherited"},
@@ -126,7 +139,8 @@ const std::vector<Mixture> kMixtures = {
      {{"Ne", 0.90}, {"CF4", 0.10}}, false, "inherited"},
 
     {"ArCF4Iso", "Ar/CF4/iC4H10 88/10/2",
-     {{"Ar", 0.88}, {"CF4", 0.10}, {"iC4H10", 0.02}}, false, "inherited"},
+     {{"Ar", 0.88}, {"CF4", 0.10}, {"iC4H10", 0.02}}, true,
+     "SPS test-beam gas (2026)"},
 
     {"ArCF4CO2", "Ar/CF4/CO2 45/40/15",
      {{"Ar", 0.45}, {"CF4", 0.40}, {"CO2", 0.15}}, false, "inherited"},

@@ -282,13 +282,30 @@ cathode, entrance window — is **not** in the gerbers. See open questions in
 
 ## 5. Mechanics
 
-`design/mechanical/` holds the drift frame in STEP:
+`design/mechanical/` holds the drift frame in STEP, byte-identical to the
+reference copies in `Detector_Drawings/DRIFT_P2_261124/DRIFT_P2_261124/` (26 Nov 2024):
 
-- `P2_Frame_V1_3mm.stp` — 3 mm drift variant
-- `P2_Frame_V2_4mm.stp` — 4 mm drift variant
+- `P2_Frame_V1_3mm.stp` (= `FRAME_3mm/P2_Frame_V1.stp`) — 3 mm drift variant
+- `P2_Frame_V2_4mm.stp` (= `FRAME_4mm/P2_Frame_V2.0.stp`) — **4 mm drift
+  variant, the reference for the simulation** (Alexandra, 2026-10-06)
 
-The two variants are the strongest available hint that the **drift gap is 3 mm
-or 4 mm** — far smaller than MX17's 30 mm. Confirm before building.
+**Frame V2, sectioned exactly** (`freecad.cmd scripts/model/section_frame_step.py`,
+2026-10-06). One solid, 8.000 mm tall, z measured from the board face; the
+section is identical at every φ tested (7, 17, 30, 44, 53°) apart from local
+holes near φ = 30°:
+
+| | board side, z 0 → 4.0 | window side, z 4.0 → 8.0 |
+|---|---|---|
+| footprint | r 95 → 615, radial edges +10 mm | same |
+| opening | r **110 → 600**, edges **+0** | r **107 → 603**, edges **+3** |
+| role | drift gas, mesh, amp gap | drift foil on the 3 mm ledge at z = 4.0; front gas; window on the z = 8 face |
+
+So: **drift gap 4 mm** (board face → ledge) and **front gas 4 mm minus the
+foil** (ledge → window face). Also present and not modelled: a ~2.4 mm deep
+groove in the board face (probably glue; 2.9 → 4.6 mm wide), a Ø2 mm channel
+centred 3.5 mm above the board (probably gas distribution), two small faces at
+z = 2.6/3.8 near (600–615, 3–4) mm, and mounting ears outside r = 615 (bbox
+reaches x 657, y 569). No profile reaches the board's y = 540 chord.
 
 The matching `.stl` meshes (~280 MB each) were deliberately left on the LaCie
 drive at `DRIFT_P2_261124/DRIFT_P2_261124/FRAME_{3mm,4mm}/`. They are very

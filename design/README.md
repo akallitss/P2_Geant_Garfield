@@ -34,8 +34,13 @@ masks. `P2_Mask2` carries the 41 366 pillars and therefore defines the active
 area. `3717-A-Alexandra Kallitsopoulou - P2 Micromegas bulk.pdf` is the bulk
 run request.
 
-`older_revisions/` holds the V1 and V2 revisions of the same two masks
-(`P2_BASKET-Mask_M1/M2_V1|V2.gbr`), from `Version_Apr26/V1/` and `V2/`.
+`older_revisions/` is misnamed: it holds the **Saclay insulation masks**
+`P2_BASKET-Mask_M1/M2_V1|V2.gbr` (KiCad, 2026-03-24), byte-identical to
+`Detector_Drawings/Version_Apr26/Insulation_masks/`. **`M2_V1` is the pillar
+mask det1–det4 were bulked with** (12 477 × Ø0.8 mm + 5 × Ø6.15 mm; confirmed
+in P2_basket_analysis 2026-09-14) and is the simulation's default pillar set;
+V2 has ~800 fewer pillars towards the fan edges. M1 carries only alignment
+marks and the outline. The CERN `P2_Mask2` above is det5's pattern.
 
 ## `gerbers/DummySector0_Nov25/` — earlier wedge
 

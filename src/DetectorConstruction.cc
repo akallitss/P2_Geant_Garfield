@@ -38,6 +38,7 @@
 #include "SensitiveDetector.hh"
 #include "P2Wedge.hh"
 #include "P2PadMap.hh"
+#include "P2Pillars.hh"
 #include "GasMixtures.hh"
 
 #include <stdexcept>
@@ -725,23 +726,21 @@ G4VPhysicalVolume* DetectorConstruction::Construct() {
 // layers are placed at their true transverse position. z = 0 is the FRONT
 // WINDOW plane (top of the gas frame); the beam travels along +z:
 //
-//   front window (bulged mylar, terraced dome, apex upstream)      z < 0
-//   front gas gap                        z = 0        .. frontGap
-//   drift cathode: TWO mylar foils ~1 mm apart (gas between them);
-//     the downstream foil is aluminised on its drift-gas side
-//     (Alexandra 2026-08-05)
-//   drift gas   [sensitive]              3 mm (frame V1) or 4 mm (V2)
-//   micromesh   (woven SS 48 um opening / 19 um wire -> 38 um slab of
+//   front window: 10 um mylar, bulged (terraced dome, apex upstream) z < 0
+//   front gas gap                        z = 0 .. 3.879 mm
+//   drift cathode: one 120 um mylar foil + 1 um Al facing the drift gas,
+//     lying on the frame ledge (Alexandra 2026-10-06)
+//   drift gas   [sensitive]              3.964 mm (4 mm frame - mesh)
+//   micromesh   (woven SS 45 um opening / 18 um wire -> 36 um slab of
 //     effective-density steel; areal mass matches the woven mesh)
-//   amplification gas [sensitive]        150 um
+//   amplification gas [sensitive]        150 um, with the Dynamask pillars
 //   readout PCB: F.Cu 18um / FR4 200um / B.Cu 18um   (Stack_Up_P2.txt);
-//     Cu layers density-scaled by their gerber-measured area coverage
-//     (F.Cu pads ~0.98; B.Cu is signal lines, not a plane, ~0.17)
-//   back gas gap (= carbon back-frame depth, 1 mm)
-//   back window (bulged mylar, dome apex downstream, smaller sag)
-//   + gas frame ring around the opening on both sides. Front ring:
-//     plastic (confirmed 2026-08-05; polycarbonate assumed for the type);
-//     back ring: carbon frame glued to the PCB periphery (confirmed).
+//     real F.Cu pads, B.Cu density-scaled by radial band
+//   back gas gap (= carbon back-frame depth, 1 mm), pad-zone outline
+//   back window: 10 um mylar, bulged (dome apex downstream)
+//   + frame rings: front = plastic 8 mm frame (P2_Frame_V2.0.stp, two
+//     rings either side of the foil ledge) standing on the 150 um bulk
+//     Dynamask; back = 1 mm carbon frame, board outline -> pad zone.
 //
 // The window bulge from the few-mbar overpressure is modelled as a
 // terraced dome: N stacked gas prisms whose wedge profile shrinks about
@@ -767,6 +766,15 @@ G4VPhysicalVolume* DetectorConstruction::ConstructP2() {
     if (!matCarbon) {
         matCarbon = new G4Material("CarbonFrame", 1.60*g/cm3, 1);
         matCarbon->AddMaterial(nist->FindOrBuildMaterial("G4_C"), 1.0);
+    }
+
+    // Pillars: Dynamask photoimageable dry film, rho 1.2-1.4 g/cm3. An
+    // acrylic, so PMMA's C5H8O2 composition at the middle of that density
+    // range stands in for the (unpublished) exact formulation.
+    G4Material* matDynamask = G4Material::GetMaterial("Dynamask", false);
+    if (!matDynamask) {
+        matDynamask = new G4Material("Dynamask", 1.30*g/cm3, 1);
+        matDynamask->AddMaterial(nist->FindOrBuildMaterial("G4_PLEXIGLASS"), 1.0);
     }
 
     // ── Thicknesses (config in mm/um; P2:: constants in mm) ──────────────
@@ -822,7 +830,12 @@ G4VPhysicalVolume* DetectorConstruction::ConstructP2() {
                                           kFrameEdgeOffset, kFrameTopCut);
     const auto polyOpening = WedgeOutline(kOpenRIn, kOpenROut,
                                           kOpenEdgeOffset, kOpenTopCut);
+    const auto polyDriftOpening = WedgeOutline(kDriftOpenRIn, kDriftOpenROut,
+                                               kDriftOpenEdgeOffset, kBoardTopCut);
+    const auto polyZone    = WedgeOutline(kZoneRIn, kZoneROut,
+                                          kZoneEdgeOffset, kBoardTopCut);
     const G4TwoVector openC = Centroid(polyOpening);
+    const G4TwoVector zoneC = Centroid(polyZone);
 
     // ── Vis ───────────────────────────────────────────────────────────────
     auto visMylar = new G4VisAttributes(G4Color(0.70, 0.90, 0.70, 0.50));
@@ -837,8 +850,19 @@ G4VPhysicalVolume* DetectorConstruction::ConstructP2() {
     auto visGasV  = new G4VisAttributes(G4Color(0.55, 0.85, 0.95, 0.15));
 
     // ── World: contains the full wedge in gerber coordinates ─────────────
-    const G4double frameH = frontGap + tCathMy + cathGap + tCathMy + tCathAl
-                          + tDrift + tMesh + tAmp;
+    // cathGap <= 0 selects the single-foil cathode (the baseline since
+    // 2026-10-06); > 0 the old two-foil model with gas between the foils.
+    const bool     twoFoils = cathGap > 0.0;
+    const G4double tCath    = (twoFoils ? tCathMy + cathGap : 0.0) + tCathMy + tCathAl;
+    // The frame steps out at the drift-foil ledge (P2_Frame_V2.0.stp), so it
+    // is built as two rings: window side down to the foil's board face, and
+    // board side from there to the Dynamask. The frame sits on the 150 um
+    // Dynamask left on the PCB by the bulk process, and the mesh is cut
+    // inside it (Alexandra 2026-10-06), so the board-side ring spans drift
+    // gas + mesh only: 3.964 + 0.036 = 4.000 mm, the STEP ledge height.
+    const G4double frameHWin   = frontGap + tCath;
+    const G4double frameHBoard = tDrift + tMesh;
+    const G4double frameH      = frameHWin + frameHBoard + tAmp;   // to the pad plane
     const G4double zPCBEnd  = frameH + tCuF + tFR4 + tCuB;
     const G4double zBackWin = zPCBEnd + backGap;
     const G4double zMax     = zBackWin + hBack + tWin;
@@ -877,7 +901,9 @@ G4VPhysicalVolume* DetectorConstruction::ConstructP2() {
     // Terraced bulged window. zBase: window plane; sign: -1 = dome rises
     // upstream (front window), +1 = downstream (back window); H: sag height.
     auto BuildWindow = [&](const std::string& tag, G4double zBase,
-                           int sign, G4double H) {
+                           int sign, G4double H,
+                           const std::vector<G4TwoVector>& outline,
+                           const G4TwoVector& c) {
         const int N = 6;
         std::vector<double> sig(N + 1), h(N + 1);
         for (int k = 0; k <= N; ++k) {
@@ -886,7 +912,7 @@ G4VPhysicalVolume* DetectorConstruction::ConstructP2() {
             h[k]   = H * std::sin(a);
         }
         for (int k = 0; k < N; ++k) {
-            const auto poly = ScaleAbout(polyOpening, openC, sig[k]);
+            const auto poly = ScaleAbout(outline, c, sig[k]);
             // gas step
             const G4double dz = h[k+1] - h[k];
             const std::string gnm = tag + "_Gas" + std::to_string(k);
@@ -899,7 +925,7 @@ G4VPhysicalVolume* DetectorConstruction::ConstructP2() {
             const std::string mnm = tag + "_Mylar" + std::to_string(k);
             G4VSolid* msolid = nullptr;
             if (k < N - 1) {
-                auto inner = ScaleAbout(polyOpening, openC, sig[k+1]);
+                auto inner = ScaleAbout(outline, c, sig[k+1]);
                 msolid = new G4SubtractionSolid(mnm,
                             Prism(mnm + "_o", poly, tWin),
                             Prism(mnm + "_i", inner, 4*tWin));
@@ -915,12 +941,16 @@ G4VPhysicalVolume* DetectorConstruction::ConstructP2() {
     };
 
     // ── Stack, front window plane (z=0) downstream ────────────────────────
-    // Drift cathode = two mylar foils ~1 mm apart, chamber gas between them;
-    // the downstream foil carries the aluminization facing the drift gas.
+    // Drift cathode: one aluminized mylar foil lying on the frame ledge, Al
+    // facing the drift gas. The two-foil variant keeps its old volume names.
     PlaceLayer("FrontGas",           polyOpening, frontGap, matGas,   visGasV);
-    PlaceLayer("DriftCathode_Mylar1",polyOpening, tCathMy,  matMylar, visMylar);
-    PlaceLayer("DriftCathode_Gas",   polyOpening, cathGap,  matGas,   visGasV);
-    PlaceLayer("DriftCathode_Mylar2",polyOpening, tCathMy,  matMylar, visMylar);
+    if (twoFoils) {
+        PlaceLayer("DriftCathode_Mylar1",polyOpening, tCathMy,  matMylar, visMylar);
+        PlaceLayer("DriftCathode_Gas",   polyOpening, cathGap,  matGas,   visGasV);
+        PlaceLayer("DriftCathode_Mylar2",polyOpening, tCathMy,  matMylar, visMylar);
+    } else {
+        PlaceLayer("DriftCathode_Mylar", polyOpening, tCathMy,  matMylar, visMylar);
+    }
     PlaceLayer("DriftCathode_Al",    polyOpening, tCathAl,  matAl,    visAl);
     G4LogicalVolume* driftLV = nullptr;
     // zF is the running front face, so the drift mid-plane is fixed before the
@@ -937,15 +967,43 @@ G4VPhysicalVolume* DetectorConstruction::ConstructP2() {
     // negative depth. So record the frame here and let Stage B convert:
     //     depth = fP2MeshZ - z_world     (mm, 0 at the mesh, +tDrift at the cathode)
     fP2DriftEntryZ = zF;                // cathode side of the drift gas
-    PlaceLayer("DriftGas",          polyOpening, tDrift,   matGas,   visDrift, &driftLV);
+    PlaceLayer("DriftGas",          polyDriftOpening, tDrift, matGas, visDrift, &driftLV);
     fDriftGasLV = driftLV;
     fP2MeshZ = zF;                      // drift gas ends / mesh begins
-    PlaceLayer("Micromesh",         polyOpening, tMesh,    matMesh,  visMesh);
+    PlaceLayer("Micromesh",         polyDriftOpening, tMesh,  matMesh, visMesh);
     G4LogicalVolume* ampLV = nullptr;
     fP2AmpEntryZ = zF;                  // mesh ends / amplification gap begins
-    PlaceLayer("AmpGas",            polyOpening, tAmp,     matGas,   visAmp, &ampLV);
+    PlaceLayer("AmpGas",            polyDriftOpening, tAmp,   matGas,  visAmp, &ampLV);
     fP2PadPlaneZ = zF;                  // amp gap ends / pad plane
     fAmpGasLV = ampLV;
+    // ── Mesh-support pillars, daughters of the amp gas ────────────────────
+    // Full amp-gap height, so the gas they displace leaves the sensitive
+    // volume. AmpGas is an extrusion of the absolute gerber outline placed at
+    // x = y = 0, so its local x/y are gerber x/y. include/P2Pillars.hh is
+    // generated with every pillar checked inside the outline and none
+    // overlapping (scripts/gerber/extract_pillars.py), which is why the
+    // ~12k-41k placements skip the per-volume overlap check.
+    int nPillars = 0;
+    if (fConfig.p2_pillars != "none") {
+        const bool cern = fConfig.p2_pillars == "cern";
+        auto PlacePillars = [&](const char* name, double r,
+                                const PillarXY* xy, int n) {
+            auto* lv = new G4LogicalVolume(
+                new G4Tubs(name, 0, r*mm, tAmp/2, 0, 360.*deg), matDynamask, name);
+            lv->SetVisAttributes(visFR4);
+            for (int i = 0; i < n; ++i)
+                new G4PVPlacement(nullptr, G4ThreeVector(xy[i].x*mm, xy[i].y*mm, 0),
+                                  lv, name, ampLV, false, i, false);
+            nPillars += n;
+        };
+        if (cern) {
+            PlacePillars("Pillar",    kPillarRCern,    kPillarsCern,    kNPillarsCern);
+            PlacePillars("PillarBig", kPillarRBigCern, kPillarsBigCern, kNPillarsBigCern);
+        } else {
+            PlacePillars("Pillar",    kPillarRSaclay,    kPillarsSaclay,    kNPillarsSaclay);
+            PlacePillars("PillarBig", kPillarRBigSaclay, kPillarsBigSaclay, kNPillarsBigSaclay);
+        }
+    }
     // ── Readout copper ────────────────────────────────────────────────────
     // Each 18 um copper layer is built as a GAS-FILLED envelope with the
     // copper placed inside it, rather than as one board-spanning sheet of
@@ -1061,24 +1119,49 @@ G4VPhysicalVolume* DetectorConstruction::ConstructP2() {
     BuildCuLayer("PCB_Cu_F", tCuF, true);
     PlaceLayer("PCB_FR4",           polyBoard,   tFR4,     matFR4,   visFR4);
     BuildCuLayer("PCB_Cu_B", tCuB, false);
-    PlaceLayer("BackGas",           polyOpening, backGap,  matGas,   visGasV);
+    PlaceLayer("BackGas",           polyZone,    backGap,  matGas,   visGasV);
 
-    // ── Gas frame rings (front: window plane -> pad plane; back: mirror) ──
-    // Front ring: plastic, confirmed 2026-08-05 (polycarbonate assumed for
-    // the exact type). Back ring: carbon frame glued to the PCB periphery,
-    // back mylar glued to its rear face (confirmed, photos 2026-08-05).
+    // ── Gas frame rings (front: window plane -> Dynamask; back: mirror) ──
+    // Front frame: plastic, confirmed 2026-08-05 (polycarbonate assumed for
+    // the exact type), two rings either side of the drift-foil ledge,
+    // standing on the bulk Dynamask. Back ring: carbon frame glued to the
+    // PCB, back mylar glued to its rear face (confirmed, photos 2026-08-05);
+    // it covers the bare board from the board edge in to the pad zone
+    // (Alexandra 2026-10-06).
+    //
+    // Not modelled: the ~5 mm Dynamask border between the pad zone and the
+    // drift opening, inside the amp layer -- it stays gas there. It lies
+    // outside every pad, and the Saclay pillars at r_in reach 0.12 mm past
+    // the pad-zone arc, so a border solid would need per-pillar clipping.
     {
+        auto* dynSolid = new G4SubtractionSolid("BulkDynamask",
+            Prism("BulkDynamask_o", polyBoard, tAmp),
+            Prism("BulkDynamask_i", polyDriftOpening, tAmp + 2.0*mm));
+        auto* dlv = new G4LogicalVolume(dynSolid, matDynamask, "BulkDynamask");
+        dlv->SetVisAttributes(visFR4);
+        new G4PVPlacement(nullptr,
+            G4ThreeVector(0, 0, frameHWin + frameHBoard + tAmp/2), dlv,
+            "BulkDynamask", worldLV, false, 0, true);
+
         auto* ringSolid = new G4SubtractionSolid("GasFrame",
-            Prism("GasFrame_o", polyFrame, frameH),
-            Prism("GasFrame_i", polyOpening, frameH + 2.0*mm));
+            Prism("GasFrame_o", polyFrame, frameHWin),
+            Prism("GasFrame_i", polyOpening, frameHWin + 2.0*mm));
         auto* lv = new G4LogicalVolume(ringSolid, matPlast, "GasFrame");
         lv->SetVisAttributes(visFrame);
-        new G4PVPlacement(nullptr, G4ThreeVector(0, 0, frameH/2), lv,
+        new G4PVPlacement(nullptr, G4ThreeVector(0, 0, frameHWin/2), lv,
                           "GasFrame", worldLV, false, 0, true);
 
+        auto* ledgeSolid = new G4SubtractionSolid("GasFrameLedge",
+            Prism("GasFrameLedge_o", polyFrame, frameHBoard),
+            Prism("GasFrameLedge_i", polyDriftOpening, frameHBoard + 2.0*mm));
+        auto* llv = new G4LogicalVolume(ledgeSolid, matPlast, "GasFrameLedge");
+        llv->SetVisAttributes(visFrame);
+        new G4PVPlacement(nullptr, G4ThreeVector(0, 0, frameHWin + frameHBoard/2),
+                          llv, "GasFrameLedge", worldLV, false, 0, true);
+
         auto* backRing = new G4SubtractionSolid("GasFrameBack",
-            Prism("GasFrameBack_o", polyFrame, backGap),
-            Prism("GasFrameBack_i", polyOpening, backGap + 2.0*mm));
+            Prism("GasFrameBack_o", polyBoard, backGap),
+            Prism("GasFrameBack_i", polyZone, backGap + 2.0*mm));
         auto* blv = new G4LogicalVolume(backRing, matCarbon, "GasFrameBack");
         blv->SetVisAttributes(visFrame);
         new G4PVPlacement(nullptr, G4ThreeVector(0, 0, zPCBEnd + backGap/2),
@@ -1086,8 +1169,8 @@ G4VPhysicalVolume* DetectorConstruction::ConstructP2() {
     }
 
     // ── Bulged windows ────────────────────────────────────────────────────
-    BuildWindow("FrontWindow", 0.0,      -1, hFront);
-    BuildWindow("BackWindow",  zBackWin, +1, hBack);
+    BuildWindow("FrontWindow", 0.0,      -1, hFront, polyOpening, openC);
+    BuildWindow("BackWindow",  zBackWin, +1, hBack,  polyZone,    zoneC);
 
     // ── Fine-cut region: the gas plus the thin layers bounding it ─────────
     // Photon conversions in the mesh and the pad copper only matter if the
@@ -1104,7 +1187,7 @@ G4VPhysicalVolume* DetectorConstruction::ConstructP2() {
         auto* fine = new G4Region("P2FineCut");
         for (const char* n : {"DriftGas", "AmpGas", "Micromesh",
                               "PCB_Cu_F_Gap", "DriftCathode_Al",
-                              "DriftCathode_Mylar2"}) {
+                              "DriftCathode_Mylar", "DriftCathode_Mylar2"}) {
             if (auto* lv = G4LogicalVolumeStore::GetInstance()->GetVolume(n, false))
                 fine->AddRootLogicalVolume(lv);
         }
@@ -1116,13 +1199,24 @@ G4VPhysicalVolume* DetectorConstruction::ConstructP2() {
     G4cout << "  Drift gap      : " << tDrift/mm  << " mm" << G4endl;
     G4cout << "  Amp gap        : " << tAmp/um    << " um" << G4endl;
     G4cout << "  Front/back gap : " << frontGap/mm << " / " << backGap/mm << " mm" << G4endl;
-    G4cout << "  Drift cathode  : 2 x " << tCathMy/um << " um mylar, "
-           << cathGap/mm << " mm apart, Al on drift side" << G4endl;
+    if (twoFoils)
+        G4cout << "  Drift cathode  : 2 x " << tCathMy/um << " um mylar, "
+               << cathGap/mm << " mm apart, Al on drift side" << G4endl;
+    else
+        G4cout << "  Drift cathode  : " << tCathMy/um << " um mylar + "
+               << tCathAl/um << " um Al, on the frame ledge" << G4endl;
+    G4cout << "  Frame          : " << frameHWin/mm << " + " << frameHBoard/mm
+           << " mm (window side + board side of the ledge; STEP: 4.0 + 4.0),"
+           << " on " << tAmp/um << " um Dynamask" << G4endl;
+    G4cout << "  Back frame     : carbon, " << backGap/mm
+           << " mm, board outline -> pad zone" << G4endl;
     G4cout << "  Mesh           : woven SS "
            << fConfig.p2_mesh_open_um << "/" << fConfig.p2_mesh_wire_um
            << " um -> " << tMesh/um << " um slab, fill "
            << meshFill << G4endl;
     G4cout << "  Window bulge   : " << hFront/mm  << " / " << hBack/mm << " mm sag" << G4endl;
+    G4cout << "  Pillars        : " << fConfig.p2_pillars << " mask, "
+           << nPillars << " placed in the amp gap" << G4endl;
     G4cout << "  PCB            : " << tCuF/um << "um F.Cu / " << tFR4/um
            << "um FR4 / " << tCuB/um << "um B.Cu" << G4endl;
     G4cout << "  Readout copper : "
