@@ -30,6 +30,7 @@ Usage:
     python3 scripts/submit_condor_p2.py --dry-run
     python3 scripts/submit_condor_p2.py --scan photon --outdir /eos/user/d/dneff/p2
     python3 scripts/submit_condor_p2.py --scan angle --gases ArIso NeIso9010
+    python3 scripts/submit_condor_p2.py --scan rnd2026 --outdir /eos/user/a/akallits/p2_sim/rnd2026
 """
 
 import argparse
@@ -73,8 +74,21 @@ ANGLE_FULL_ENERGIES = [30, 119, 155]
 # §6 gap scan [mm].
 DRIFT_GAPS = [1.0, 2.0, 3.0, 4.0]
 
-# §4.3 test-beam anchor.
-MUON_ENERGY_MEV = 200000.0
+# §4.3 test-beam anchor: 150 GeV muons, SPS July 2026 (Alexandra 2026-10-06).
+MUON_ENERGY_MEV = 150000.0
+
+# ── Final R&D phase, October 2026 (`--scan rnd2026`) ─────────────────────────
+# Gain recovery: larger isobutane fraction and larger drift gap, Ar vs Ne,
+# plus the e/gamma question. 3.964 mm = drift gas of the 4 mm frame
+# (P2_Frame_V2.0.stp on the Dynamask); 5 mm has no frame drawing yet, the
+# frame is stretched by --drift-gap.
+RND_GASES = ["ArIso", "ArIso9010", "NeIso", "NeIso8515"]
+RND_DRIFT_GAPS = [3.964, 5.0]
+RND_PHOTON_ENERGIES = [10e-3, 15e-3, 20e-3, 30e-3, 40e-3, 50e-3, 60e-3,
+                       80e-3, 100e-3, 150e-3]
+RND_ELECTRON_MEV = 100.0             # signal electrons (Alexandra 2026-10-06)
+RND_ELECTRON_ANGLES = [0, 20, 40]
+RND_TB_GASES = ["ArCO2Iso9352", "ArCF4Iso"]   # SPS July 2026, 4 mm frame
 
 # Statistics. Photon points need far more throws because P(interaction) is
 # ~10^-3 and the rarest reported quantity needs >=100 events (§9).
@@ -98,17 +112,20 @@ def parse_args():
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--scan", default="electron",
-                   choices=["electron", "photon", "angle", "gap", "muon", "all"],
+                   choices=["electron", "photon", "angle", "gap", "muon", "all",
+                            "rnd2026"],
                    help="Which block of the campaign to submit (default: electron)")
-    p.add_argument("--gases", nargs="+", default=CAMPAIGN_GASES)
+    p.add_argument("--gases", nargs="+", default=None,
+                   help="Default: the §7.4 list, or RND_GASES for rnd2026")
     p.add_argument("--outdir", default="./p2_results",
                    help="Where ROOT output lands (use EOS for real campaigns)")
     p.add_argument("--jobdir", default="./condor_p2",
                    help="Where wrapper/submit/logs/manifest go")
     p.add_argument("--nevents", type=int, default=None,
                    help="Override events per job")
-    p.add_argument("--drift-gap", type=float, default=3.0,
-                   help="Drift gap [mm] for non-gap scans (default: 3)")
+    p.add_argument("--drift-gap", type=float, default=3.964,
+                   help="Drift gas [mm] for non-gap scans (default: 3.964, "
+                        "the 4 mm frame)")
     p.add_argument("--beam-spread", type=float, default=RING_PITCH_MM,
                    help=f"Impact-point spread [mm] (default: {RING_PITCH_MM}, "
                         f"one ring pitch). 0 = pencil beam; only use 0 if you "
@@ -183,6 +200,19 @@ def build_jobs(args):
             return args.nevents
         n = NEVENTS[particle]
         return n * NEVENTS_BASELINE_BOOST if baseline else n
+
+    if args.scan == "rnd2026":
+        for gas in args.gases:
+            for gap in RND_DRIFT_GAPS:
+                for e in RND_PHOTON_ENERGIES:
+                    jobs.append((gas, "gamma", e, gap, 0.0, n_for("gamma", e)))
+                for th in RND_ELECTRON_ANGLES:
+                    jobs.append((gas, "electron", RND_ELECTRON_MEV, gap, float(th),
+                                 n_for("electron", RND_ELECTRON_MEV)))
+        for gas in RND_TB_GASES:
+            jobs.append((gas, "muon", MUON_ENERGY_MEV, RND_DRIFT_GAPS[0], 0.0,
+                         n_for("muon", MUON_ENERGY_MEV)))
+        return jobs
 
     want = ({"electron", "photon", "angle", "gap", "muon"}
             if args.scan == "all" else {args.scan})
@@ -344,6 +374,8 @@ def write_manifest(job_dir: Path, rows, args, exe):
 # ============================================================
 def main():
     args = parse_args()
+    if args.gases is None:
+        args.gases = RND_GASES if args.scan == "rnd2026" else CAMPAIGN_GASES
 
     exe = find_exe(args.exe)
     if not exe:
@@ -355,7 +387,8 @@ def main():
 
     avail = known_gases(exe)
     if avail:
-        bad = [g for g in args.gases if g not in avail]
+        check = args.gases + (RND_TB_GASES if args.scan == "rnd2026" else [])
+        bad = [g for g in check if g not in avail]
         if bad:
             sys.exit(f"ERROR: unknown gas(es) {bad}.\n"
                      f"Run `{exe} --list-gases` for the current table.")
