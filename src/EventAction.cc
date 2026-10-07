@@ -81,6 +81,9 @@ void EventAction::ClassifyEvent() {
         const bool softFromSolid =
             proc == "phot" &&
             !dominant->parentBirthVolume.empty() &&
+            // the beam photon is born in the World (air): a soft primary
+            // absorbed in the gas is a direct conversion, not fluorescence
+            dominant->parentBirthVolume != "World" &&
             !IsActiveGas(dominant->parentBirthVolume) &&
             dominant->parentEnergy > 0.0 &&
             dominant->parentEnergy < 0.020;      // < 20 keV [MeV units]
