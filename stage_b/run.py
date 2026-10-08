@@ -29,13 +29,15 @@ if __package__ in (None, ""):
     from stage_b.clusters import read_clusters
     from stage_b.digitize import DigitizerConfig, digitize
     from stage_b.frame import read_frame
-    from stage_b.gas import JSONTable, PlaceholderTable
+    from stage_b.gas import (JSONTable, MagboltzTable, PlaceholderTable,
+                              SPS_DRIFT_FIELD_V_PER_CM)
     from stage_b.padplane import PadPlane
 else:
     from .clusters import read_clusters
     from .digitize import DigitizerConfig, digitize
     from .frame import read_frame
-    from .gas import JSONTable, PlaceholderTable
+    from .gas import (JSONTable, MagboltzTable, PlaceholderTable,
+                      SPS_DRIFT_FIELD_V_PER_CM)
     from .padplane import PadPlane
 
 
@@ -49,9 +51,17 @@ def parse_args(argv=None):
     p.add_argument("--polya-theta", type=float, default=2.0)
     p.add_argument("--mesh-transparency", type=float, default=1.0,
                    help="Constant eps (P0.13: a field map would be better)")
+    p.add_argument("--transport", default="magboltz",
+                   choices=["magboltz", "placeholder"],
+                   help="Gas transport: Magboltz tables (default, dry gas, "
+                        "stage_b/gas_tables/) or the old PLACEHOLDER values")
+    p.add_argument("--drift-field", type=float, default=SPS_DRIFT_FIELD_V_PER_CM,
+                   help="Drift field [V/cm] at which the transport is taken "
+                        f"(default {SPS_DRIFT_FIELD_V_PER_CM:g}: SPS July 2026, "
+                        "drift 700 V - mesh 450 V over 4 mm)")
     p.add_argument("--gas-table", default=None,
-                   help="JSON transport table; default is the built-in "
-                        "PLACEHOLDER values (P0.10 open)")
+                   help="A hand-made JSON transport table (JSONTable); "
+                        "overrides --transport")
     p.add_argument("--v-scale", type=float, default=1.0,
                    help="Multiply drift velocity, to state a wet-gas "
                         "assumption explicitly (MX17: water dominates v_d)")
@@ -69,9 +79,13 @@ def main(argv=None):
         infile.with_name(infile.stem + "_padhits.root")
 
     frame = read_frame(infile)
-    table = (JSONTable(args.gas_table, args.v_scale) if args.gas_table
-             else PlaceholderTable(args.v_scale))
-    transport = table.for_gas(frame.gas)
+    if args.gas_table:
+        table = JSONTable(args.gas_table, args.v_scale)
+    elif args.transport == "magboltz":
+        table = MagboltzTable(v_scale=args.v_scale)
+    else:
+        table = PlaceholderTable(args.v_scale)
+    transport = table.for_gas(frame.gas, args.drift_field)
     padplane = PadPlane.load(args.mapping_revision)
     cfg = DigitizerConfig(gain=args.gain, polya_theta=args.polya_theta,
                           mesh_transparency=args.mesh_transparency,
@@ -109,13 +123,13 @@ def main(argv=None):
                 print(f"  WARNING: {off:.1%} of electrons landed outside the "
                       f"instrumented pad area.")
 
-    write_output(outfile, hits, frame, transport, cfg)
+    write_output(outfile, hits, frame, transport, cfg, args.drift_field)
     if not args.quiet:
         print(f"  Wrote         : {outfile}")
     return hits
 
 
-def write_output(outfile: Path, hits, frame, transport, cfg):
+def write_output(outfile: Path, hits, frame, transport, cfg, drift_field):
     import uproot as up
     with up.recreate(outfile) as f:
         f["PadHitTree"] = {
@@ -141,6 +155,10 @@ def write_output(outfile: Path, hits, frame, transport, cfg):
             "polyaTheta":     np.array([cfg.polya_theta]),
             "meshTransparency": np.array([cfg.mesh_transparency]),
             "vDrift_mm_per_ns": np.array([transport.v_drift_mm_per_ns]),
+            "sigmaL_mm_per_sqrt_mm": np.array([transport.sigma_L_mm_per_sqrt_mm]),
+            "sigmaT_mm_per_sqrt_mm": np.array([transport.sigma_T_mm_per_sqrt_mm]),
+            "attachLength_mm": np.array([transport.attach_length_mm]),
+            "driftField_V_per_cm": np.array([float(drift_field)]),
             "vScale":         np.array([transport.v_scale]),
             "mappingRevision": np.array([cfg.mapping_revision]),
             "seed":           np.array([cfg.seed], np.int64),

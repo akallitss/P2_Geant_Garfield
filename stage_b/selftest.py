@@ -22,7 +22,7 @@ if __package__ in (None, ""):
 
 from stage_b.digitize import DigitizerConfig, digitize          # noqa: E402
 from stage_b.frame import DriftFrame                            # noqa: E402
-from stage_b.gas import PlaceholderTable, Transport             # noqa: E402
+from stage_b.gas import MagboltzTable, PlaceholderTable, Transport  # noqa: E402
 from stage_b.padplane import PadPlane                           # noqa: E402
 
 FAILURES = []
@@ -178,6 +178,36 @@ def main():
     t2 = PlaceholderTable().for_gas("ArCF4")
     check("non-campaign gas is flagged, not silently substituted",
           "NOT a campaign gas" in t2.provenance, t2.provenance[:48])
+
+    # ── 11. Magboltz table: nodes, interpolation, guards ─────────────────
+    mt = MagboltzTable()
+    want = {"ArIso", "ArIso9010", "NeIso", "NeIso8515", "ArCO2Iso9352", "ArCF4Iso"}
+    check("Magboltz table covers the six campaign / SPS gases",
+          want <= set(mt.gases()), ", ".join(mt.gases()))
+    raw = mt._d["ArIso"]
+    k = 20
+    node = mt.for_gas("ArIso", raw["E_V_per_cm"][k])
+    check("Magboltz value at a table node is the table value",
+          abs(node.v_drift_mm_per_ns * 1e3 - raw["v_um_per_ns"][k]) < 1e-6 * raw["v_um_per_ns"][k],
+          f"{node.v_drift_mm_per_ns*1e3:.3f} um/ns")
+    lo = mt.for_gas("ArIso", raw["E_V_per_cm"][k]).v_drift_mm_per_ns
+    hi = mt.for_gas("ArIso", raw["E_V_per_cm"][k + 1]).v_drift_mm_per_ns
+    mid = mt.for_gas("ArIso", np.sqrt(raw["E_V_per_cm"][k] * raw["E_V_per_cm"][k + 1])).v_drift_mm_per_ns
+    check("Magboltz interpolation lies between the neighbouring nodes",
+          min(lo, hi) <= mid <= max(lo, hi))
+    def raises(f):
+        try:
+            f()
+        except (ValueError, KeyError):
+            return True
+        return False
+    check("Magboltz refuses a missing drift field", raises(lambda: mt.for_gas("ArIso")))
+    check("Magboltz refuses a field outside the table",
+          raises(lambda: mt.for_gas("ArIso", 10.0)))
+    check("Magboltz refuses a gas it has no table for",
+          raises(lambda: mt.for_gas("NeIso9010", 625.0)))
+    check("Magboltz transport says so in its provenance",
+          "Magboltz" in node.provenance, node.provenance[:48])
 
     print()
     if FAILURES:

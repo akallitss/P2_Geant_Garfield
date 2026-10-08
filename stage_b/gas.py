@@ -1,10 +1,11 @@
 """gas.py — drift transport parameters, with Magboltz as a drop-in.
 
 Stage B needs, per gas and drift field: drift velocity v_d, longitudinal and
-transverse diffusion, and the attachment length. None of those are measured
-or computed yet — P0.10 (Magboltz tables) is open — so this module ships
-**placeholders** and is built so that swapping them for real tables changes
-one function and nothing else. That separation is the point of P0.9's "write
+transverse diffusion, and the attachment length. Since 2026-10-08 these come
+from Magboltz (`MagboltzTable`, bottom of this file; P0.10). The placeholder
+table below is kept for comparison and for gases without a table; it was
+built so that swapping it for real tables changes one function and nothing
+else. That separation is the point of P0.9's "write
 it with pluggable gas tables; unit-test with fake tables so Magboltz becomes
 a drop-in".
 
@@ -176,4 +177,70 @@ class JSONTable(TransportTable):
             n_tot_per_cm=float(p.get("n_tot_per_cm", np.nan)),
             v_scale=self.v_scale,
             provenance=f"JSON table {self.path.name}",
+        )
+
+
+# ----------------------------------------------------------------------
+# Magboltz (P0.10). Tables generated 2026-10-08 on lxplus with the LCG_109
+# Garfield (scripts/garfield/make_gas_table.C, ncoll 10, 40 field points,
+# dry gas, 293.15 K, 760 Torr) and sampled to JSON by
+# scripts/garfield/export_gas_json.C, so Stage B needs no Garfield.
+# ----------------------------------------------------------------------
+DEFAULT_MAGBOLTZ = Path(__file__).parent / "gas_tables" / "magboltz_dry_20261008.json"
+
+# SPS July 2026 working point: mesh 450 V, drift 700 V, 4 mm drift gap.
+SPS_DRIFT_FIELD_V_PER_CM = (700.0 - 450.0) / 0.4
+
+
+class MagboltzTable(TransportTable):
+    """Magboltz transport, interpolated log-log in the drift field.
+
+    Only v_d, D_L, D_T and attachment come from Magboltz. n_p / n_tot are not
+    Magboltz quantities: they keep the PDG placeholder where one exists and
+    are NaN otherwise -- Stage B takes the ionization from Stage A's clusters
+    and only records these two. The tables are DRY: a wet gas drifts slower
+    (MX17: 1-2 % H2O at the SPS), which `v_scale` lets a run state.
+    """
+
+    def __init__(self, path=DEFAULT_MAGBOLTZ, v_scale: float = 1.0):
+        self.path = Path(path)
+        self.v_scale = float(v_scale)
+        self._d = json.loads(self.path.read_text())
+
+    def gases(self):
+        return sorted(self._d)
+
+    def for_gas(self, gas: str, drift_field_V_per_cm: float | None = None) -> Transport:
+        if gas not in self._d:
+            raise KeyError(f"{self.path.name} has no Magboltz table for '{gas}' "
+                           f"(has: {self.gases()})")
+        if drift_field_V_per_cm is None:
+            raise ValueError("MagboltzTable needs the drift field (V/cm)")
+        t = self._d[gas]
+        E = np.asarray(t["E_V_per_cm"], dtype=float)
+        e = float(drift_field_V_per_cm)
+        if not E[0] <= e <= E[-1]:
+            raise ValueError(f"drift field {e:g} V/cm outside the table "
+                             f"({E[0]:g}-{E[-1]:g} V/cm)")
+        logE = np.log(E)
+
+        def at(key):
+            y = np.asarray(t[key], dtype=float)
+            if np.all(y > 0):
+                return float(np.exp(np.interp(np.log(e), logE, np.log(y))))
+            return float(np.interp(np.log(e), logE, y))
+
+        eta = at("eta_per_cm")
+        p = _PLACEHOLDER.get(gas)
+        return Transport(
+            gas=gas,
+            v_drift_mm_per_ns=at("v_um_per_ns") * 1e-3 * self.v_scale,
+            sigma_L_mm_per_sqrt_mm=at("DL_um_sqrtcm") * 1e-3 / np.sqrt(10.0),
+            sigma_T_mm_per_sqrt_mm=at("DT_um_sqrtcm") * 1e-3 / np.sqrt(10.0),
+            attach_length_mm=(10.0 / eta) if eta > 0 else np.inf,
+            n_p_per_cm=p["n_p"] if p else np.nan,
+            n_tot_per_cm=p["n_tot"] if p else np.nan,
+            v_scale=self.v_scale,
+            provenance=(f"Magboltz dry ({self.path.name}) at {e:.0f} V/cm; "
+                        f"n_p/n_tot {'PDG placeholder' if p else 'not set'}"),
         )

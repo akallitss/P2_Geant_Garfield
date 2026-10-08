@@ -1,12 +1,13 @@
 # Stage B — ionization clusters → per-pad charge and time
 
-**Status (2026-08-07): skeleton complete and validated end-to-end.** It runs
-on real Stage A output and produces per-pad charge and arrival time. Four
-inputs are still placeholders, all listed below and all recorded in every
-output file. **Do not quote a number from this stage without reading §3.**
+**Status (2026-10-08): runs end to end with Magboltz gas transport.** It runs
+on real Stage A output and produces per-pad charge and arrival time. The gas
+transport is now Magboltz; the gain, induced current, pillars and mesh
+transparency are still placeholders, all listed below and all recorded in
+every output file. **Do not quote a number from this stage without reading §3.**
 
 ```bash
-python3 -m stage_b.selftest                       # 16 checks, no Geant4 needed
+python3 -m stage_b.selftest                       # 23 checks, no Geant4 needed
 python3 -m stage_b.run stageA.root -o padhits.root
 ```
 
@@ -53,16 +54,23 @@ baseline rests on, so having two independent routes to it matters.
 
 In rough order of how much each could move an answer.
 
-1. **Gas transport parameters (P0.10).** `v_d`, σ_L, σ_T and attachment are
-   placeholders from the campaign docs, shared with `vmm/time_resolution.py`
-   so the two stay consistent. Anything scaling as 1/v_d — most of the timing
-   — inherits their error. Swap in a `TransportTable` implementation when
-   Magboltz tables exist; nothing else changes.
-   *And expect the real dry table to still sit above the real detector:*
+1. **Gas transport: Magboltz since 2026-10-08 (P0.10).** `v_d`, σ_L, σ_T and
+   attachment now come from dry Magboltz tables for the six gases of the
+   October 2026 campaign (Ar/iso 95/5, 90/10, Ne/iso 95/5, 85/15,
+   Ar/CO₂/iso 93/5/2, Ar/CF₄/iso 88/10/2), interpolated at `--drift-field`
+   (default 625 V/cm, the SPS July 2026 point). Tables:
+   `gas_tables/magboltz_dry_20261008.json`, made by
+   `scripts/garfield/make_gas_table.C` + `export_gas_json.C`.
+   `--transport placeholder` keeps the old values for comparison.
+   *The real detector still drifts slower than a dry table:*
    MX17's bench finds **water contamination dominates v_d** (36.6 µm/ns
    measured vs a much higher dry prediction, 1–2 % H₂O inferred at SPS).
    `--v-scale` exists so a run states which assumption it was made under
    rather than hiding a preference in a constant.
+   The **gain** is still a configured mean + Polya spread: the Townsend
+   coefficients are in the table, but without Penning transfer they give a
+   gain far below the measured one, so it must be calibrated on the SPS HV
+   scans first.
 
 2. **Induced current is not modelled (P0.17).** Each electron contributes its
    charge as a delta at its arrival time. The real signal is a fast electron
