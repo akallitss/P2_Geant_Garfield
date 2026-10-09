@@ -1,0 +1,11 @@
+executable     = run_mesh_cell.sh
+arguments      = SolveP2MeshCell.class
+transfer_input_files = SolveP2MeshCell.class
+output         = logs/mesh_cell.$(ClusterId).out
+error          = logs/mesh_cell.$(ClusterId).err
+log            = logs/mesh_cell.$(ClusterId).log
+request_cpus   = 8
+request_memory = 24 GB
++JobFlavour    = "workday"
+requirements   = (OpSysAndVer =?= "AlmaLinux9")
+queue
