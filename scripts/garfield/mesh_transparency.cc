@@ -6,14 +6,18 @@
 // The probe mode shows the wires at x = +-34 um (along y) and y = +-34 um
 // (along x), solid between z = 135.5 and 165 um where two wires cross and
 // 141-159.5 um on a single wire; the openings are centred on (0, 0).
-// Needs the pinned Garfield build: older builds let electrons step through
-// the 18 um wires, which is exactly the observable here.
+// Free-flight steps that clip a wire are caught only with the field map's
+// interface panels (ComponentFieldMap::EnableInterfaceCrossings, pinned build
+// 927e5c21 or later; off by default). Runs before 2026-10-14 did not enable
+// them, so only step end points inside a wire were caught.
 //
 // Built and run by run_transparency.sh (a compiled program: ROOT 6.38's
 // cling fails to JIT this against Garfield):
 //   mesh_transparency probe  <cell dir> "" <out>
 //   mesh_transparency maps   <cell dir> <gas>.gas <out>
-//   mesh_transparency transp <cell dir> <gas>.gas <out> [n] [seed]
+//   mesh_transparency transp <cell dir> <gas>.gas <out> [n] [seed] [flags]
+// flags (comma-separated): nox  = no interface-crossing check (old runs),
+//                          null = AvalancheMicroscopic null-collision steps
 //
 // probe : prints the medium along z at a few (x, y) to locate the wires.
 // maps  : writes <out>_xz_y<y>.txt and <out>_xy.txt (potential, field, inside
@@ -45,8 +49,10 @@
 
 namespace {
 const double kHalf = 0.0068;       // half cell [cm] (68 um)
-const double kMeshTop = 0.0170;    // above the woven wires [cm]
-const double kMeshBottom = 0.0130; // below the woven wires [cm]
+// Above / below the woven wires [cm]: found from the map at a wire crossing
+// (solid extent +- 5 um); 170 / 130 um for the colleague's meshHeight 150.
+double kMeshTop = 0.0170;
+double kMeshBottom = 0.0130;
 const double kStartAbove = 0.015;  // start this far above kMeshTop [cm]
 
 struct Mix { std::vector<std::pair<std::string, double>> parts; };
@@ -57,6 +63,9 @@ const std::map<std::string, Mix> kMixtures = {
   {"NeIso8515",    {{{"ne", 85.}, {"ic4h10", 15.}}}},
   {"ArCO2Iso9352", {{{"ar", 93.}, {"co2", 5.}, {"ic4h10", 2.}}}},
   {"ArCF4Iso",     {{{"ar", 88.}, {"cf4", 10.}, {"ic4h10", 2.}}}},
+  // Literature comparison only (Nikolopoulos et al., JINST 6 (2011) P06011);
+  // no gas table: microscopic tracking only, RKF skipped.
+  {"ArCO2_8515",   {{{"ar", 85.}, {"co2", 15.}}}},
 };
 
 std::string Basename(const std::string& p) {
@@ -67,12 +76,13 @@ std::string Basename(const std::string& p) {
 
 void mesh_transparency(const char* mode = "probe", const char* cell = ".",
                        const char* gasfile = "", const char* out = "mt",
-                       int n = 2000, int seed = 1) {
+                       int n = 2000, int seed = 1, const char* flags = "") {
   using namespace Garfield;
   const std::string m(mode), dir(cell);
 
   // Gas: composition from the mm_sim name, transport table for RKF.
   MediumMagboltz gas;
+  bool haveTable = false;
   gas.SetTemperature(293.15);
   gas.SetPressure(760.);
   if (std::string(gasfile) != "") {
@@ -88,7 +98,10 @@ void mesh_transparency(const char* mode = "probe", const char* cell = ".",
     else
       gas.SetComposition(p[0].first, p[0].second, p[1].first, p[1].second,
                          p[2].first, p[2].second);
-    if (!gas.LoadGasFile(gasfile)) return;
+    haveTable = std::ifstream(gasfile).good() && gas.LoadGasFile(gasfile);
+    if (!haveTable)
+      std::cout << "mesh_transparency: no gas table " << gasfile
+                << ", microscopic tracking only\n";
     gas.SetMaxElectronEnergy(200.);
     gas.Initialise(true);
   } else {
@@ -108,6 +121,13 @@ void mesh_transparency(const char* mode = "probe", const char* cell = ".",
     return;
   fm.EnablePeriodicityX();
   fm.EnablePeriodicityY();
+  const std::string fl(flags);
+  const bool xings = fl.find("nox") == std::string::npos;
+  if (xings) {
+    // after the periodicities: the panels are built from the current setup
+    fm.EnableInterfaceCrossings(true);
+    std::cout << "interface panels: " << fm.GetNumberOfInterfacePanels() << "\n";
+  }
   fm.SetGas(&gas);
   fm.PrintRange();
   fm.PrintMaterials();
@@ -120,6 +140,22 @@ void mesh_transparency(const char* mode = "probe", const char* cell = ".",
     Medium* med = fm.GetMedium(x, y, z);
     return med != nullptr && med->IsDriftable();
   };
+  {
+    double zlo = -1., zhi = -1.;
+    for (double z = 0.; z <= 0.05; z += 0.00002) {
+      if (!inGas(0.0034, 0.0034, z)) {
+        if (zlo < 0.) zlo = z;
+        zhi = z;
+      }
+    }
+    if (zlo > 0.) {
+      kMeshBottom = zlo - 0.0005;
+      kMeshTop = zhi + 0.0005;
+    }
+    std::printf("mesh solid at the crossing: %.1f - %.1f um; counted as passed "
+                "below %.1f um, start %.1f um\n", zlo * 1e4, zhi * 1e4,
+                kMeshBottom * 1e4, (kMeshTop + kStartAbove) * 1e4);
+  }
 
   if (m == "probe") {
     const double pts[][2] = {{0., 0.}, {0.0034, 0.0034}, {0.0034, 0.},
@@ -185,7 +221,7 @@ void mesh_transparency(const char* mode = "probe", const char* cell = ".",
 
     // Field lines: RKF drift lines without diffusion from 400 um, across x at
     // two y values; projected later onto the x-z plane.
-    if (std::string(gasfile) == "") return;
+    if (!haveTable) return;
     DriftLineRKF drift(&sensor);
     drift.SetMaximumStepSize(2.e-5);
     std::ofstream f(std::string(out) + "_lines.txt");
@@ -213,14 +249,16 @@ void mesh_transparency(const char* mode = "probe", const char* cell = ".",
     Random::SetEngine(RandomEngineRoot(seed));
     const double z0 = kMeshTop + kStartAbove;
     // Stop once below the wires; the amplification gap is not tracked here.
-    sensor.SetArea(-10., -10., kMeshBottom - 0.0005, 10., 10., z0 + 0.002);
+    // The top is 1 mm above the start so back-diffusion cannot end a track.
+    sensor.SetArea(-10., -10., kMeshBottom - 0.0005, 10., 10., z0 + 0.1);
     AvalancheMicroscopic aval(&sensor);
+    if (fl.find("null") != std::string::npos) aval.EnableNullCollisionSteps(true);
     DriftLineRKF drift(&sensor);
     drift.SetMaximumStepSize(2.e-5);
 
     std::ofstream f(std::string(out) + "_electrons.txt");
     f << "# x0 y0 [um] | micro: status x1 y1 z1 [um] pass | rkf: status x1 y1 z1 [um] pass\n";
-    int passM = 0, passR = 0;
+    int passM = 0, passR = 0, attached = 0, wire = 0, other = 0;
     for (int i = 0; i < n; ++i) {
       const double x = -kHalf + 2 * kHalf * RndmUniform();
       const double y = -kHalf + 2 * kHalf * RndmUniform();
@@ -230,10 +268,17 @@ void mesh_transparency(const char* mode = "probe", const char* cell = ".",
       aval.GetElectronEndpoint(0, a0, b0, c0, t0, e0, x1, y1, z1, t1, e1, st);
       const int pm = z1 < kMeshBottom ? 1 : 0;
       passM += pm;
-      drift.DriftElectron(x, y, z0, 0.);
-      double xr, yr, zr, tr;
+      if (!pm) {
+        if (st == -7) ++attached;  // attachment, not the mesh
+        else if (st == -5) ++wire; // stopped in a wire
+        else ++other;              // e.g. left through the top
+      }
+      double xr = 0, yr = 0, zr = 0, tr = 0;
       int sr = 0;
-      drift.GetEndPoint(xr, yr, zr, tr, sr);
+      if (haveTable) {
+        drift.DriftElectron(x, y, z0, 0.);
+        drift.GetEndPoint(xr, yr, zr, tr, sr);
+      }
       const int pr = zr < kMeshBottom ? 1 : 0;
       passR += pr;
       f << x * 1e4 << " " << y * 1e4 << " " << st << " " << x1 * 1e4 << " "
@@ -244,9 +289,12 @@ void mesh_transparency(const char* mode = "probe", const char* cell = ".",
                     double(passM) / (i + 1), double(passR) / (i + 1));
     }
     const double tm = double(passM) / n, tr = double(passR) / n;
-    std::printf("TRANSPARENCY gas=%s cell=%s n=%d micro=%.4f +- %.4f rkf=%.4f\n",
+    std::printf("TRANSPARENCY gas=%s cell=%s n=%d micro=%.4f +- %.4f rkf=%.4f "
+                "attached=%.4f wire=%.4f other=%.4f flags=%s\n",
                 Basename(gasfile).c_str(), dir.c_str(), n, tm,
-                std::sqrt(tm * (1 - tm) / n), tr);
+                std::sqrt(tm * (1 - tm) / n), haveTable ? tr : -1.,
+                double(attached) / n, double(wire) / n, double(other) / n,
+                xings ? fl.c_str() : "nox");
     return;
   }
   std::cerr << "mesh_transparency: unknown mode " << m << "\n";
@@ -255,11 +303,11 @@ void mesh_transparency(const char* mode = "probe", const char* cell = ".",
 int main(int argc, char** argv) {
   if (argc < 5) {
     std::cerr << "usage: " << argv[0]
-              << " probe|maps|transp <cell dir> <gasfile|\"\"> <out> [n] [seed]\n";
+              << " probe|maps|transp <cell dir> <gasfile|\"\"> <out> [n] [seed] [flags]\n";
     return 1;
   }
   mesh_transparency(argv[1], argv[2], argv[3], argv[4],
                     argc > 5 ? std::atoi(argv[5]) : 2000,
-                    argc > 6 ? std::atoi(argv[6]) : 1);
+                    argc > 6 ? std::atoi(argv[6]) : 1, argc > 7 ? argv[7] : "");
   return 0;
 }

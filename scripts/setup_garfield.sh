@@ -121,6 +121,16 @@ if [ "$_mode" = "build" ]; then
     fi
     git -C "$_src" fetch --all --tags
     git -C "$_src" checkout "$P2_GARFIELD_PIN"
+    # Local fixes on top of the pin (see each patch header / README).
+    _patches="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/garfield/patches"
+    for _p in "$_patches"/*.patch; do
+        [ -f "$_p" ] || continue
+        if git -C "$_src" apply --check "$_p" 2>/dev/null; then
+            git -C "$_src" apply "$_p" && echo "==> applied $(basename "$_p")"
+        else
+            echo "==> $(basename "$_p") already applied or does not fit; skipped"
+        fi
+    done
     cmake -S "$_src" -B "$_src/../build" -DCMAKE_INSTALL_PREFIX="$_inst" \
           -DCMAKE_BUILD_TYPE=Release
     cmake --build "$_src/../build" -j"$(nproc)"

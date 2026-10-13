@@ -1,8 +1,10 @@
 // export_gas_json.C -- Magboltz .gas tables -> one JSON file for Stage B.
 //
 // Stage B is pure Python and must not need Garfield, so the transport
-// coefficients are sampled here, on a log grid in E, and written as plain
-// arrays. stage_b.gas.MagboltzTable interpolates them at the drift field.
+// coefficients are written here as plain arrays, at the table's own field
+// points only. (A regular grid through the table's 3-15 kV/cm gap made
+// Garfield interpolate across it: alpha reached 1e33 /cm in Ar/CO2/iso.)
+// stage_b.gas.MagboltzTable interpolates them at the drift field.
 //
 //   source scripts/setup_garfield.sh
 //   root -l -b -q 'scripts/garfield/export_gas_json.C("<dir with .gas>", "out.json")'
@@ -20,16 +22,14 @@ R__LOAD_LIBRARY(libGarfield)
 void export_gas_json(const char* dir = ".", const char* out = "magboltz.json") {
   const std::vector<std::string> gases = {"ArIso", "ArIso9010", "NeIso",
                                           "NeIso8515", "ArCO2Iso9352", "ArCF4Iso"};
-  // Inside the table range only (100 V/cm - 90 kV/cm): no extrapolation.
-  std::vector<double> E;
-  for (int i = 0; i < 80; ++i) E.push_back(100. * std::pow(900., i / 79.));
-
   std::ofstream js(out);
   js << "{\n";
   for (size_t k = 0; k < gases.size(); ++k) {
     Garfield::MediumMagboltz m;
     const std::string file = std::string(dir) + "/" + gases[k] + ".gas";
     if (!m.LoadGasFile(file)) { std::cerr << "cannot load " << file << "\n"; return; }
+    std::vector<double> E, bf, ang;
+    m.GetFieldGrid(E, bf, ang);
     std::vector<double> v, dl, dt, al, et;
     for (double e : E) {
       double vx, vy, vz, l, t, a, h;

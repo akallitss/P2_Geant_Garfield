@@ -1,0 +1,35 @@
+# HTCondor: robustness checks of the SPS-point transparency (4 mm cell):
+#   x    interface-crossing check on (default from 2026-10-14), top 1 mm up
+#   xnull  the same plus null-collision steps
+#   nox  crossing check off (as the first runs), top 1 mm up
+#   noxnull  crossing check off, null-collision steps (independent of the
+#        crossing check and of the patch in scripts/garfield/patches/)
+#   condor_submit scripts/garfield/transparency_check.sub
+executable     = scripts/garfield/run_transparency.sh
+cells          = /eos/user/a/akallits/p2_sim/comsol/p2_sps
+gases          = /eos/user/a/akallits/p2_sim/gas_tables
+outdir         = /eos/user/a/akallits/p2_sim/transparency/check
+output         = condor_transp/check_$(tag)_$(gas).out
+error          = condor_transp/check_$(tag)_$(gas).err
+log            = condor_transp/check.log
+request_memory = 8 GB
++JobFlavour    = "workday"
+arguments      = transp $(cells)/h4mm $(gases)/$(gas).gas $(outdir)/$(tag)_h4mm_$(gas) 5000 $(seed) $(flags)
+queue tag, gas, seed, flags from (
+  x     ArIso        11 x
+  x     ArIso9010    12 x
+  x     NeIso        13 x
+  x     NeIso8515    14 x
+  x     ArCO2Iso9352 15 x
+  x     ArCF4Iso     16 x
+  xnull ArIso        31 null
+  xnull ArCF4Iso     36 null
+  xnull NeIso        33 null
+  xnull ArIso9010    32 null
+  xnull NeIso8515    34 null
+  xnull ArCO2Iso9352 35 null
+  nox   ArIso        41 nox
+  nox   ArCF4Iso     46 nox
+  noxnull ArIso      51 nox,null
+  noxnull ArCF4Iso   56 nox,null
+)

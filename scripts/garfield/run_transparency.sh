@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# run_transparency.sh <mode> <cell> <gasfile|""> <out> [n] [seed]
+# run_transparency.sh <mode> <cell> <gasfile|""> <out> [n] [seed] [flags]
 #
 # Builds (if needed) and runs scripts/garfield/mesh_transparency.cc with the pinned Garfield build
 # (P2_GARFIELD_INSTALL, default the lxplus work-area install).
@@ -23,4 +23,4 @@ if [ ! -x "$exe" ] || [ "$src" -nt "$exe" ]; then
         $(root-config --cflags --libs) -L"$P2_GARFIELD_INSTALL/lib64" -lGarfield -lGarfieldRandom \
         -Wl,-rpath,"$P2_GARFIELD_INSTALL/lib64"
 fi
-"$exe" "$1" "$2" "$3" "$4" "${5:-2000}" "${6:-1}"
+"$exe" "$1" "$2" "$3" "$4" "${5:-2000}" "${6:-1}" "${7:-}"

@@ -1,0 +1,40 @@
+# HTCondor: validation against Nikolopoulos et al., JINST 6 (2011) P06011.
+# Their geometry rebuilt in the COMSOL cell (63.5 um spacing, 18 um wire,
+# calendered to ~30 um, mesh bottom on 128 um pillars, E_amp ~41.4 kV/cm:
+#   PITCH=63.5 MH=142.85 VM=563 TAG=_nik scripts/comsol/make_sweep.sh)
+# and their gas, Ar/CO2 85/15, with both stepping modes:
+#   x     interface-crossing check, default free flights
+#   xnull the same with null-collision steps
+#   condor_submit scripts/garfield/transparency_sweep_nik.sub
+executable     = scripts/garfield/run_transparency.sh
+cells          = /eos/user/a/akallits/p2_sim/comsol/p2_sps/h2mm_sweep_nik
+gases          = /eos/user/a/akallits/p2_sim/gas_tables
+outdir         = /eos/user/a/akallits/p2_sim/transparency/sweep_nik
+output         = condor_transp/nik_$(mode)_E$(E).out
+error          = condor_transp/nik_$(mode)_E$(E).err
+log            = condor_transp/nik.log
+request_memory = 8 GB
++JobFlavour    = "workday"
+arguments      = transp $(cells)/E$(E) $(gases)/ArCO2_8515.gas $(outdir)/$(mode)/E$(E)_ArCO2_8515 4000 $(Process) $(flags)
+queue E, mode, flags from (
+  200 x x
+  400 x x
+  600 x x
+  900 x x
+  1250 x x
+  1800 x x
+  2500 x x
+  3500 x x
+  5000 x x
+  6000 x x
+  200 xnull x,null
+  400 xnull x,null
+  600 xnull x,null
+  900 xnull x,null
+  1250 xnull x,null
+  1800 xnull x,null
+  2500 xnull x,null
+  3500 xnull x,null
+  5000 xnull x,null
+  6000 xnull x,null
+)

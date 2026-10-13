@@ -1,0 +1,24 @@
+diff --git a/Include/Garfield/InterfacePanels.hh b/Include/Garfield/InterfacePanels.hh
+index 4dd72c08..58b8544d 100644
+--- a/Include/Garfield/InterfacePanels.hh
++++ b/Include/Garfield/InterfacePanels.hh
+@@ -113,6 +113,19 @@ class InterfacePanels {
+         continue;
+       }
+       double tLeaf = 0.;
++      if (depth >= maxDepth) {
++        // A leaf that still straddles a periodic boundary at the maximum
++        // depth maps onto a chord across the whole cell, which would report
++        // spurious crossings; such a leaf is negligibly short, skip it.
++        const auto a = interp(xa, xb, ta);
++        const auto b = interp(xa, xb, tb);
++        double lm = 0., lr = 0.;
++        for (std::size_t k = 0; k < 3; ++k) {
++          lm += (mb[k] - ma[k]) * (mb[k] - ma[k]);
++          lr += (b[k] - a[k]) * (b[k] - a[k]);
++        }
++        if (lm > 4. * lr + 1.e-24) continue;
++      }
+       if (Crossed(ma, mb, tLeaf)) {
+         // The mapping is affine on this sub-segment, so the
+         // parametric crossing position also applies to the global

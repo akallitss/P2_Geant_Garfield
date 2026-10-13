@@ -1,0 +1,73 @@
+# HTCondor: mesh transparency vs drift field, corrected cell: bottom of the
+# mesh on the 150 um pillars (MH=164.85 TAG=_gap150 scripts/comsol/make_sweep.sh).
+# Interface-crossing check on and null-collision steps (field re-evaluated
+# along each free flight; needed near the wires, see docs/results/mesh).
+#   condor_submit scripts/garfield/transparency_sweep_gap150.sub
+executable     = scripts/garfield/run_transparency.sh
+cells          = /eos/user/a/akallits/p2_sim/comsol/p2_sps/h2mm_sweep_gap150
+gases          = /eos/user/a/akallits/p2_sim/gas_tables
+outdir         = /eos/user/a/akallits/p2_sim/transparency/sweep_gap150
+output         = condor_transp/gap150_E$(E)_$(gas).out
+error          = condor_transp/gap150_E$(E)_$(gas).err
+log            = condor_transp/gap150.log
+request_memory = 8 GB
++JobFlavour    = "workday"
+arguments      = transp $(cells)/E$(E) $(gases)/$(gas).gas $(outdir)/E$(E)_$(gas) 3000 $(Process) x,null
+queue E, gas from (
+  150 ArIso
+  300 ArIso
+  450 ArIso
+  625 ArIso
+  900 ArIso
+  1250 ArIso
+  1800 ArIso
+  2500 ArIso
+  150 ArIso9010
+  300 ArIso9010
+  450 ArIso9010
+  625 ArIso9010
+  900 ArIso9010
+  1250 ArIso9010
+  1800 ArIso9010
+  2500 ArIso9010
+  150 NeIso
+  300 NeIso
+  450 NeIso
+  625 NeIso
+  900 NeIso
+  1250 NeIso
+  1800 NeIso
+  2500 NeIso
+  150 NeIso8515
+  300 NeIso8515
+  450 NeIso8515
+  625 NeIso8515
+  900 NeIso8515
+  1250 NeIso8515
+  1800 NeIso8515
+  2500 NeIso8515
+  150 ArCO2Iso9352
+  300 ArCO2Iso9352
+  450 ArCO2Iso9352
+  625 ArCO2Iso9352
+  900 ArCO2Iso9352
+  1250 ArCO2Iso9352
+  1800 ArCO2Iso9352
+  2500 ArCO2Iso9352
+  150 ArCF4Iso
+  300 ArCF4Iso
+  450 ArCF4Iso
+  625 ArCF4Iso
+  900 ArCF4Iso
+  1250 ArCF4Iso
+  1800 ArCF4Iso
+  2500 ArCF4Iso
+  150 ArCO2_8515
+  300 ArCO2_8515
+  450 ArCO2_8515
+  625 ArCO2_8515
+  900 ArCO2_8515
+  1250 ArCO2_8515
+  1800 ArCO2_8515
+  2500 ArCO2_8515
+)

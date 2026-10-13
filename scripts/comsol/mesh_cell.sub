@@ -1,6 +1,7 @@
 executable     = run_mesh_cell.sh
-arguments      = SolveP2MeshCell.class
-transfer_input_files = SolveP2MeshCell.class
+cls            = SolveP2MeshCell
+arguments      = $Fn(cls).class
+transfer_input_files = $(cls).class
 output         = logs/mesh_cell.$(ClusterId).out
 error          = logs/mesh_cell.$(ClusterId).err
 log            = logs/mesh_cell.$(ClusterId).log
