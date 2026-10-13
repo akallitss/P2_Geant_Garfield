@@ -1,0 +1,20 @@
+<section id="twosims" style="background:#FFFFFF;color:#111111;font-family:Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:32px">
+<h2 style="font-size:56px;font-weight:600">Two Geant4 simulations, two questions</h2>
+<div style="display:flex;gap:40px">
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FCEBD9;border:2px solid #111111;padding:32px">
+<p style="font-size:32px;font-weight:700">P2Sim · the whole experiment</p>
+<p style="font-size:26px;font-weight:600">"What arrives at the detector?"</p>
+<ul style="font-size:26px;line-height:1.4"><li>Beam, target, chamber walls, shielding</li><li>Micromegas as simple 8 × 8 mm boxes, one gas</li><li>Output: photons per layer: energy, angle, rate (MHz)</li></ul>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#DCEAF7;border:2px solid #111111;padding:32px">
+<p style="font-size:32px;font-weight:700">Ours · one detailed wedge</p>
+<p style="font-size:26px;font-weight:600">"What does the detector see?"</p>
+<ul style="font-size:26px;line-height:1.4"><li>Every layer from the design files: real mesh, pads, pillars, frame</li><li>One photon energy or 100 MeV electrons at a time, 4 gases, 2 gaps</li><li>Output per event: where it converts, energy deposited, which pads</li></ul>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;border:3px solid #111111;padding:28px">
+<p style="font-size:30px;font-weight:700">Background rate in a layer = Σ over energies [ P2Sim flux(E) ] × [ our P(detected | E) ]</p>
+<p style="font-size:26px">Signal: the same chain with 100 MeV electrons. The deposit spectra of both give the upper ADC cut.</p>
+</div>
+<aside>Why not only P2Sim: it uses one gas and one gap, simplified materials (45 µm mesh pitch, 5× our copper), no pads or pillars, and gives no event-by-event deposits. Its job is the environment; ours is the detector response. Neither replaces the other.</aside>
+</section>

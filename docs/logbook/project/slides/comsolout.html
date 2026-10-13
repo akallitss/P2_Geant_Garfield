@@ -1,0 +1,6 @@
+<section id="comsolout" style="background:#FFFFFF;color:#111111;font-family:Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:32px">
+<h2 style="font-size:56px;font-weight:600">COMSOL · outputs and their use</h2>
+<table style="font-size:24px;color:#111111"><tr><th style="width:20%">Case</th><th style="width:40%">mesh.mphtxt</th><th style="width:40%">potential.txt</th></tr><tr><td>h4mm</td><td>230 MB</td><td>164 MB (1.88 M nodes)</td></tr><tr><td>h2mm</td><td>494 MB</td><td>365 MB</td></tr></table>
+<ul style="font-size:26px;line-height:1.5"><li>Format read by Garfield++ ComponentComsol; on EOS in p2_sim/comsol/p2_sps/&lt;case&gt;</li><li>Check: the potential is −450 V on the mesh wires</li><li>Not exported: weighting potentials (switched off in the base model). Not needed now: the pad signal uses the exact parallel-plate weighting field (pads ~11 mm ≫ 136 µm cell)</li><li><b>Done:</b> field maps and mesh transparency from these files (next slides)</li></ul>
+<aside>The transparency replaces the 100 % placeholder in stage B. If the 2 mm and 4 mm cells agree, the faster 2 mm cell is used for the field-ratio sweep.</aside>
+</section>

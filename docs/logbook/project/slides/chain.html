@@ -1,0 +1,5 @@
+<section id="chain" style="background:#FFFFFF;color:#111111;font-family:Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:40px">
+<h2 style="font-size:64px;font-weight:600">What we are building</h2>
+<ul style="font-size:30px;line-height:1.5"><li><b>A · Geant4:</b> particle through the full wedge → ionization clusters in the gas (position, time, primaries, where it converted)</li><li><b>B · Digitizer:</b> drift, diffusion, attachment, mesh transparency, avalanche gain, pad lookup → charge per pad</li><li><b>C · VMM3a:</b> shaper (Iakovidis et al.), threshold → amplitude and time; gain 3.0 / 4.5 mV/fC, 100 / 200 ns</li><li><b>Garfield++ feeds B:</b> Magboltz gas tables, avalanche gain vs mesh voltage (to calibrate on SPS HV scans), mesh transparency, induced pad signal → into C</li><li><b>COMSOL feeds Garfield:</b> the electric field around the woven mesh (unit cell)</li></ul>
+<aside>Geant4 is stage A. Garfield supplies the gas physics and signal used in B and passed to C. COMSOL provides the field map near the mesh wires, which Garfield needs for transparency and local gain.</aside>
+</section>

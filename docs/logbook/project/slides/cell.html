@@ -1,0 +1,34 @@
+<section id="cell" style="background:#FFFFFF;color:#111111;font-family:Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:32px">
+<h2 style="font-size:56px;font-weight:600">COMSOL · what the mesh cell is (schematic)</h2>
+<p style="position:absolute;left:160px;top:200px;width:900px;font-size:24px;text-align:center">one weave period = 2 × 68 µm = 136 µm · periodic on all sides (dashed)</p>
+<svg aria-label="Side view of the woven-mesh unit cell: drift electrode at the top, woven mesh wires in the middle, amplification gap and pad plane at the bottom, with field lines squeezing through the mesh openings" style="position:absolute;left:160px;top:240px;width:900px;height:670px" width="900" height="670" viewBox="0 0 900 670">
+<rect x="0" y="30" width="900" height="14" fill="#888888"/>
+<rect x="0" y="44" width="900" height="426" fill="#DCEAF7"/>
+<rect x="0" y="444" width="900" height="196" fill="#F6D5D0"/>
+<rect x="0" y="640" width="900" height="16" fill="#C77B30"/>
+<path d="M0,420 C112,420 112,372 225,372 C338,372 338,420 450,420 C562,420 562,468 675,468 C788,468 788,420 900,420" fill="none" stroke="#999999" stroke-width="40" opacity="0.5"/>
+<g fill="none" stroke="#2F6DB5" stroke-width="3">
+<path d="M50,44 L50,300 C50,370 17,370 17,420 L17,470 C17,520 40,560 40,640"/>
+<path d="M150,44 L150,300 C150,370 52,370 52,420 L52,470 C52,520 120,560 120,640"/>
+<path d="M250,44 L250,300 C250,370 380,370 380,420 L380,470 C380,520 290,560 290,640"/>
+<path d="M350,44 L350,300 C350,370 415,370 415,420 L415,470 C415,520 370,560 370,640"/>
+<path d="M450,44 L450,640"/>
+<path d="M550,44 L550,300 C550,370 485,370 485,420 L485,470 C485,520 530,560 530,640"/>
+<path d="M650,44 L650,300 C650,370 520,370 520,420 L520,470 C520,520 610,560 610,640"/>
+<path d="M750,44 L750,300 C750,370 848,370 848,420 L848,470 C848,520 780,560 780,640"/>
+<path d="M850,44 L850,300 C850,370 883,370 883,420 L883,470 C883,520 860,560 860,640"/>
+</g>
+<circle cx="225" cy="420" r="24" fill="#444444"/>
+<circle cx="675" cy="420" r="24" fill="#444444"/>
+<path d="M400,140 L440,170 M460,140 L500,170" stroke="#111111" stroke-width="3"/>
+<line x1="0" y1="30" x2="0" y2="656" stroke="#111111" stroke-width="3" stroke-dasharray="12 10"/>
+<line x1="900" y1="30" x2="900" y2="656" stroke="#111111" stroke-width="3" stroke-dasharray="12 10"/>
+</svg>
+<p style="position:absolute;left:1100px;top:262px;width:692px;font-size:24px">Drift electrode · −700 V (4 mm cell) / −575 V (2 mm)</p>
+<p style="position:absolute;left:1100px;top:420px;width:692px;font-size:24px">Drift region · 625 V/cm, uniform away from the mesh (axis broken)</p>
+<p style="position:absolute;left:1100px;top:500px;width:692px;font-size:26px;color:#2F6DB5">Field lines (blue) squeeze through the openings. The share of drift electrons that follows them into the gap is the mesh transparency.</p>
+<p style="position:absolute;left:1100px;top:645px;width:692px;font-size:24px">Woven mesh · Ø18 µm wires, 68 µm apart · −450 V</p>
+<p style="position:absolute;left:1100px;top:775px;width:692px;font-size:24px">Amplification gap · 150 µm · 30 kV/cm</p>
+<p style="position:absolute;left:1100px;top:875px;width:692px;font-size:24px">Pads · 0 V</p>
+<aside>Schematic only: proportions are not to scale and the field lines are drawn by hand to show the idea. The real 3D field is what COMSOL computes. Dark circles: wires seen end-on; light grey band: the crossing wire weaving over and under them.</aside>
+</section>

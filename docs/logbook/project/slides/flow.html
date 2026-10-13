@@ -1,0 +1,23 @@
+<section id="flow" style="background:#FFFFFF;color:#111111;font-family:Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:32px">
+<h2 style="font-size:56px;font-weight:600">How the pieces fit together</h2>
+<div style="position:absolute;left:128px;top:260px;width:340px;height:130px;background:#F2F2F2;border:2px solid #111111;padding:20px;display:flex;flex-direction:column;gap:6px"><p style="font-size:28px;font-weight:700">Design files</p><p style="font-size:24px">PCB, frame, mesh, pillars</p></div>
+<div style="position:absolute;left:528px;top:260px;width:380px;height:130px;background:#FCEBD9;border:2px solid #111111;padding:20px;display:flex;flex-direction:column;gap:6px"><p style="font-size:28px;font-weight:700">P2Sim (Matthieu)</p><p style="font-size:24px">photons reaching each layer</p></div>
+<div style="position:absolute;left:968px;top:260px;width:340px;height:130px;background:#F2F2F2;border:2px solid #111111;padding:20px;display:flex;flex-direction:column;gap:6px"><p style="font-size:28px;font-weight:700">Magboltz</p><p style="font-size:24px">drift, diffusion per gas</p></div>
+<div style="position:absolute;left:1368px;top:260px;width:424px;height:130px;background:#F2F2F2;border:2px solid #111111;padding:20px;display:flex;flex-direction:column;gap:6px"><p style="font-size:28px;font-weight:700">COMSOL</p><p style="font-size:24px">field around the mesh wires</p></div>
+<div style="position:absolute;left:128px;top:500px;width:400px;height:130px;background:#DCEAF7;border:2px solid #111111;padding:20px;display:flex;flex-direction:column;gap:6px"><p style="font-size:28px;font-weight:700">Geant4 · one wedge</p><p style="font-size:24px">what each particle deposits</p></div>
+<div style="position:absolute;left:688px;top:500px;width:400px;height:130px;background:#DCEAF7;border:2px solid #111111;padding:20px;display:flex;flex-direction:column;gap:6px"><p style="font-size:28px;font-weight:700">Digitizer (B)</p><p style="font-size:24px">electrons → charge per pad</p></div>
+<div style="position:absolute;left:1248px;top:500px;width:544px;height:130px;background:#DCEAF7;border:2px solid #111111;padding:20px;display:flex;flex-direction:column;gap:6px"><p style="font-size:28px;font-weight:700">Garfield++</p><p style="font-size:24px">mesh transparency, gain, signal</p></div>
+<div style="position:absolute;left:688px;top:740px;width:400px;height:130px;background:#DCEAF7;border:2px solid #111111;padding:20px;display:flex;flex-direction:column;gap:6px"><p style="font-size:28px;font-weight:700">VMM emulator (C)</p><p style="font-size:24px">amplitude, time, threshold</p></div>
+<div style="position:absolute;left:1248px;top:740px;width:544px;height:130px;background:#FFFFFF;border:3px solid #111111;padding:20px;display:flex;flex-direction:column;gap:6px"><p style="font-size:28px;font-weight:700">Answers</p><p style="font-size:24px">efficiency, e/γ cut, rates (× P2Sim)</p></div>
+<x-connector x1="298" y1="390" x2="298" y2="500" head="end" style="color:#555555;border-width:3px"></x-connector>
+<x-connector x1="640" y1="390" x2="470" y2="500" head="end" style="color:#555555;border-width:3px"></x-connector>
+<x-connector x1="1100" y1="390" x2="960" y2="500" head="end" style="color:#555555;border-width:3px"></x-connector>
+<x-connector x1="1240" y1="390" x2="1340" y2="500" head="end" style="color:#555555;border-width:3px"></x-connector>
+<x-connector x1="1580" y1="390" x2="1580" y2="500" head="end" style="color:#555555;border-width:3px"></x-connector>
+<x-connector x1="528" y1="565" x2="688" y2="565" head="end" style="color:#555555;border-width:3px"></x-connector>
+<x-connector x1="1248" y1="565" x2="1088" y2="565" head="end" style="color:#555555;border-width:3px"></x-connector>
+<x-connector x1="888" y1="630" x2="888" y2="740" head="end" style="color:#555555;border-width:3px"></x-connector>
+<x-connector x1="1400" y1="630" x2="1088" y2="770" head="end" style="color:#555555;border-width:3px"></x-connector>
+<x-connector x1="1088" y1="805" x2="1248" y2="805" head="end" style="color:#555555;border-width:3px"></x-connector>
+<aside>Orange = Matthieu's environment simulation; grey = inputs we generate; blue = our detector chain. P2Sim tells us which photons arrive (energy, angle, rate); our Geant4 tells us what each one does inside the detector; Garfield (with the COMSOL field and Magboltz tables) turns that into charge and signal; the VMM emulator turns it into hits. The rates come back in at the end: our per-photon response × P2Sim flux.</aside>
+</section>

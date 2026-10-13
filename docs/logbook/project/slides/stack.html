@@ -1,0 +1,29 @@
+<section id="stack" style="background:#FFFFFF;color:#111111;font-family:Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:32px">
+<h2 style="font-size:56px;font-weight:600">The detector stack (not to scale)</h2>
+<div style="position:absolute;left:700px;top:250px;width:600px;height:16px;background:#BBBBBB"></div>
+<div style="position:absolute;left:700px;top:266px;width:600px;height:70px;background:#EEF4FA"></div>
+<div style="position:absolute;left:700px;top:336px;width:600px;height:20px;background:#888888"></div>
+<div style="position:absolute;left:700px;top:356px;width:600px;height:230px;background:#DCEAF7"></div>
+<div style="position:absolute;left:700px;top:586px;width:600px;height:20px;background:repeating-linear-gradient(90deg, #444444 0px, #444444 8px, #DCEAF7 8px, #DCEAF7 18px)"></div>
+<div style="position:absolute;left:700px;top:606px;width:600px;height:50px;background:#F6D5D0"></div>
+<div style="position:absolute;left:700px;top:656px;width:600px;height:12px;background:#C77B30"></div>
+<div style="position:absolute;left:700px;top:668px;width:600px;height:36px;background:#8FB07F"></div>
+<div style="position:absolute;left:700px;top:704px;width:600px;height:12px;background:#C77B30"></div>
+<div style="position:absolute;left:700px;top:716px;width:600px;height:40px;background:#EEF4FA"></div>
+<div style="position:absolute;left:700px;top:756px;width:600px;height:16px;background:#BBBBBB"></div>
+<p style="position:absolute;left:128px;top:244px;width:550px;font-size:24px;text-align:right">Window · 10 µm mylar</p>
+<p style="position:absolute;left:128px;top:332px;width:550px;font-size:24px;text-align:right">Cathode · 120 µm mylar + Al · −700 V</p>
+<p style="position:absolute;left:128px;top:582px;width:550px;font-size:24px;text-align:right">Mesh · Ø18 µm, pitch 68 µm · −450 V</p>
+<p style="position:absolute;left:128px;top:672px;width:550px;font-size:24px;text-align:right">Pads 18 µm Cu (0 V) · FR4 200 µm</p>
+<p style="position:absolute;left:128px;top:750px;width:550px;font-size:24px;text-align:right">Back window · 10 µm</p>
+<p style="position:absolute;left:1322px;top:287px;width:470px;font-size:24px">Front gas 3.9 mm · no field</p>
+<p style="position:absolute;left:1322px;top:457px;width:470px;font-size:24px">Drift gas 3.964 mm · 625 V/cm</p>
+<p style="position:absolute;left:1322px;top:617px;width:470px;font-size:24px">Amplification 150 µm · 30 kV/cm</p>
+<p style="position:absolute;left:1322px;top:722px;width:470px;font-size:24px">Back gas 1 mm · carbon frame</p>
+<x-connector x1="790" y1="200" x2="840" y2="800" head="end" style="color:#2F6DB5;border-width:4px"></x-connector>
+<x-connector x1="1000" y1="200" x2="1030" y2="450" head="end" style="color:#D9822B;border-width:4px;border-style:dashed"></x-connector>
+<x-connector x1="1200" y1="200" x2="1180" y2="590" head="end" style="color:#D9822B;border-width:4px;border-style:dashed"></x-connector>
+<x-connector x1="1180" y1="590" x2="1130" y2="470" head="end" style="color:#2F6DB5;border-width:3px"></x-connector>
+<p style="position:absolute;left:128px;top:830px;width:1664px;font-size:24px"><span style="color:#2F6DB5">Blue solid</span>: charged tracks (100 MeV e⁻ crossing; electron knocked out of the mesh). <span style="color:#D9822B">Orange dashed</span>: photons, one converting in the gas, one in the mesh wire. Electrons drift down to the mesh, multiply in the 150 µm gap, the pads collect the signal.</p>
+<aside>A photon is detected if its conversion puts at least one electron into the drift gas: either it converts in the gas itself, or it converts in a solid (mostly the steel mesh, also the copper) and the knocked-out electron escapes into the gas. Above about 40 keV in argon, and above about 15 keV in neon, the second kind dominates.</aside>
+</section>

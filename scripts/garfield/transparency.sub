@@ -1,0 +1,29 @@
+# HTCondor: mesh transparency (6 gases x 2 COMSOL cells) and field maps.
+#   bash scripts/garfield/run_transparency.sh probe <cell> "" /tmp/x   # builds the exe once
+#   condor_submit scripts/garfield/transparency.sub
+executable     = scripts/garfield/run_transparency.sh
+cells          = /eos/user/a/akallits/p2_sim/comsol/p2_sps
+gases          = /eos/user/a/akallits/p2_sim/gas_tables
+outdir         = /eos/user/a/akallits/p2_sim/transparency
+output         = condor_transp/$(mode)_$(cell)_$(gas).out
+error          = condor_transp/$(mode)_$(cell)_$(gas).err
+log            = condor_transp/transp.log
+request_memory = 8 GB
++JobFlavour    = "workday"
+arguments      = $(mode) $(cells)/$(cell) $(gases)/$(gas).gas $(outdir)/$(mode)_$(cell)_$(gas) $(n) $(seed)
+queue mode, cell, gas, n, seed from (
+  maps   h4mm ArIso        0    1
+  maps   h2mm ArIso        0    1
+  transp h4mm ArIso        5000 11
+  transp h4mm ArIso9010    5000 12
+  transp h4mm NeIso        5000 13
+  transp h4mm NeIso8515    5000 14
+  transp h4mm ArCO2Iso9352 5000 15
+  transp h4mm ArCF4Iso     5000 16
+  transp h2mm ArIso        5000 21
+  transp h2mm ArIso9010    5000 22
+  transp h2mm NeIso        5000 23
+  transp h2mm NeIso8515    5000 24
+  transp h2mm ArCO2Iso9352 5000 25
+  transp h2mm ArCF4Iso     5000 26
+)
