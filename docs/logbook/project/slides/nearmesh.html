@@ -1,0 +1,9 @@
+<section id="nearmesh" style="background:#FFFFFF;color:#111111;font-family:Arial, sans-serif;padding:128px;padding-top:96px;display:flex;flex-direction:column;gap:20px">
+<h2 style="font-size:56px;font-weight:600">Ionization born close to the mesh</h2>
+<table style="font-size:22px;color:#111111"><tr><th>Ar/iso 95/5, 4 mm: share of drift electrons born &lt; 100 µm from the mesh</th><th>10 keV</th><th>15 keV</th><th>20 keV</th><th>30 keV</th><th>40–100 keV</th><th>150 keV</th></tr>
+<tr><td>all detected photon events</td><td>3.5 %</td><td>4.0 %</td><td>4.2 %</td><td>4.2 %</td><td>2.6–3.6 %</td><td>3.5 %</td></tr>
+<tr><td>photon converted in the mesh</td><td><b>44 %</b></td><td><b>28 %</b></td><td><b>15 %</b></td><td>6.9 %</td><td>2.8–4.3 %</td><td>3.9 %</td></tr>
+<tr><td>photon converted in the gas</td><td>2.0 %</td><td>2.2 %</td><td>2.2 %</td><td>2.7 %</td><td>1.7–2.8 %</td><td>4.7 %</td></tr></table>
+<ul style="font-size:24px;line-height:1.4"><li>Uniform ionization would give 100 µm / 4 mm = 2.5 %; 100 MeV electrons: 2.0–2.6 %</li><li>For 40–100 keV photons the single T per gas and field is enough</li><li>Soft photons converting in the mesh (≤ 20 keV) put 15–44 % of their charge next to the wires: a Garfield T(start height) is needed only if the soft part (MM0) matters. Ne/iso 95/5 is similar (28 % at 10 keV)</li></ul>
+<aside>Stage A rnd2026 ClusterTree depths (Stage B frame), events with ≥ 1 drift electron, split by EventTree.convVolume (scripts/analysis/near_mesh_ionization.py, docs/results/near_mesh/). The amplification-gap share is 5–20 % for photons: those electrons are already past the mesh and get partial gain in Stage B.</aside>
+</section>

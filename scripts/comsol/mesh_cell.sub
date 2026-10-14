@@ -1,7 +1,9 @@
 executable     = run_mesh_cell.sh
-cls            = SolveP2MeshCell
-arguments      = $Fn(cls).class
-transfer_input_files = $(cls).class
+# cls: class to run (default SolveP2MeshCell); set it with -a "cls=..." or a
+# DAG VARS line (a plain assignment here would override VARS)
+clsfile        = $(cls:SolveP2MeshCell)
+arguments      = $Fn(clsfile).class
+transfer_input_files = $(clsfile).class
 output         = logs/mesh_cell.$(ClusterId).out
 error          = logs/mesh_cell.$(ClusterId).err
 log            = logs/mesh_cell.$(ClusterId).log

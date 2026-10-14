@@ -8,6 +8,8 @@
 //
 //   source scripts/setup_garfield.sh
 //   root -l -b -q 'scripts/garfield/export_gas_json.C("<dir with .gas>", "out.json")'
+//   root -l -b -q 'scripts/garfield/export_gas_json.C("<dir>", "out.json", "GasA,GasB")'
+//   (third argument: comma-separated list instead of the six campaign gases)
 //
 // Units in the JSON: E [V/cm], v [um/ns], D_L and D_T [um/sqrt(cm)],
 // alpha and eta [1/cm].
@@ -19,9 +21,21 @@ R__LOAD_LIBRARY(libGarfield)
 
 #include "Garfield/MediumMagboltz.hh"
 
-void export_gas_json(const char* dir = ".", const char* out = "magboltz.json") {
-  const std::vector<std::string> gases = {"ArIso", "ArIso9010", "NeIso",
-                                          "NeIso8515", "ArCO2Iso9352", "ArCF4Iso"};
+void export_gas_json(const char* dir = ".", const char* out = "magboltz.json",
+                     const char* list = "") {
+  std::vector<std::string> gases = {"ArIso", "ArIso9010", "NeIso",
+                                    "NeIso8515", "ArCO2Iso9352", "ArCF4Iso"};
+  if (std::string(list) != "") {
+    gases.clear();
+    std::string l(list);
+    size_t a = 0;
+    while (a <= l.size()) {
+      size_t b = l.find(',', a);
+      if (b == std::string::npos) b = l.size();
+      if (b > a) gases.push_back(l.substr(a, b - a));
+      a = b + 1;
+    }
+  }
   std::ofstream js(out);
   js << "{\n";
   for (size_t k = 0; k < gases.size(); ++k) {

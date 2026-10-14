@@ -66,6 +66,12 @@ const std::map<std::string, Mix> kMixtures = {
   // Literature comparison only (Nikolopoulos et al., JINST 6 (2011) P06011);
   // no gas table: microscopic tracking only, RKF skipped.
   {"ArCO2_8515",   {{{"ar", 85.}, {"co2", 15.}}}},
+  // SPS gas with impurities (2026-10-14), as in make_gas_table.C: base gas
+  // scaled by (1 - impurity). Microscopic tracking only needs the composition.
+  {"ArCO2Iso9352_O2_300", {{{"ar", 93. * 0.9997}, {"co2", 5. * 0.9997}, {"ic4h10", 2. * 0.9997}, {"o2", 0.03}}}},
+  {"ArCO2Iso9352_H2O_500", {{{"ar", 93. * 0.9995}, {"co2", 5. * 0.9995}, {"ic4h10", 2. * 0.9995}, {"h2o", 0.05}}}},
+  {"ArCO2Iso9352_H2O_2000", {{{"ar", 93. * 0.998}, {"co2", 5. * 0.998}, {"ic4h10", 2. * 0.998}, {"h2o", 0.2}}}},
+  {"ArCO2Iso9352_O2_300_H2O_1000", {{{"ar", 93. * 0.9987}, {"co2", 5. * 0.9987}, {"ic4h10", 2. * 0.9987}, {"o2", 0.03}, {"h2o", 0.1}}}},
 };
 
 std::string Basename(const std::string& p) {
@@ -93,11 +99,9 @@ void mesh_transparency(const char* mode = "probe", const char* cell = ".",
       return;
     }
     const auto& p = it->second.parts;
-    if (p.size() == 2)
-      gas.SetComposition(p[0].first, p[0].second, p[1].first, p[1].second);
-    else
-      gas.SetComposition(p[0].first, p[0].second, p[1].first, p[1].second,
-                         p[2].first, p[2].second);
+    auto g = [&](size_t i) { return i < p.size() ? p[i].first : std::string(""); };
+    auto f = [&](size_t i) { return i < p.size() ? p[i].second : 0.; };
+    gas.SetComposition(g(0), f(0), g(1), f(1), g(2), f(2), g(3), f(3), g(4), f(4));
     haveTable = std::ifstream(gasfile).good() && gas.LoadGasFile(gasfile);
     if (!haveTable)
       std::cout << "mesh_transparency: no gas table " << gasfile

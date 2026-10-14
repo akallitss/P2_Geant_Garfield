@@ -3,14 +3,15 @@
 #
 #   bash scripts/garfield/submit_gas_tables.sh [outdir] [ncoll]
 #
-# Default outdir /eos/user/a/akallits/p2_sim/gas_tables, ncoll 10.
+# Default outdir /eos/user/a/akallits/p2_sim/gas_tables, ncoll 10. GASES=... overrides
+# the list, e.g. the contaminated SPS gas (make_gas_table.C).
 # Garfield comes from the LCG view (enough for Magboltz, see
 # scripts/setup_garfield.sh). ~1-2 h per gas on one core.
 set -e
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 OUT="${1:-/eos/user/a/akallits/p2_sim/gas_tables}"
 NCOLL="${2:-10}"
-GASES="ArIso ArIso9010 NeIso NeIso8515 ArCO2Iso9352 ArCF4Iso"
+GASES="${GASES:-ArIso ArIso9010 NeIso NeIso8515 ArCO2Iso9352 ArCF4Iso}"
 JOBDIR="$REPO/condor_gas"
 mkdir -p "$OUT" "$JOBDIR/logs"
 

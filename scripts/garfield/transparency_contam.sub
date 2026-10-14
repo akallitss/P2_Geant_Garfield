@@ -1,0 +1,43 @@
+# HTCondor: mesh transparency vs drift field for the SPS gas with impurities
+# (O2 / H2O), corrected cell (h2mm_sweep_gap150), null-collision steps.
+# No gas table needed (microscopic only; the gas-file path just names the gas).
+#   condor_submit scripts/garfield/transparency_contam.sub
+executable     = scripts/garfield/run_transparency.sh
+cells          = /eos/user/a/akallits/p2_sim/comsol/p2_sps/h2mm_sweep_gap150
+outdir         = /eos/user/a/akallits/p2_sim/transparency/contam
+output         = condor_transp/contam_E$(E)_$(gas).out
+error          = condor_transp/contam_E$(E)_$(gas).err
+log            = condor_transp/contam.log
+request_memory = 8 GB
++JobFlavour    = "workday"
+arguments      = transp $(cells)/E$(E) none/$(gas).gas $(outdir)/E$(E)_$(gas) 3000 $(Process) x,null
+queue E, gas from (
+  150 ArCO2Iso9352_H2O_500
+  300 ArCO2Iso9352_H2O_500
+  450 ArCO2Iso9352_H2O_500
+  625 ArCO2Iso9352_H2O_500
+  900 ArCO2Iso9352_H2O_500
+  1250 ArCO2Iso9352_H2O_500
+  1800 ArCO2Iso9352_H2O_500
+  150 ArCO2Iso9352_H2O_2000
+  300 ArCO2Iso9352_H2O_2000
+  450 ArCO2Iso9352_H2O_2000
+  625 ArCO2Iso9352_H2O_2000
+  900 ArCO2Iso9352_H2O_2000
+  1250 ArCO2Iso9352_H2O_2000
+  1800 ArCO2Iso9352_H2O_2000
+  150 ArCO2Iso9352_O2_300
+  300 ArCO2Iso9352_O2_300
+  450 ArCO2Iso9352_O2_300
+  625 ArCO2Iso9352_O2_300
+  900 ArCO2Iso9352_O2_300
+  1250 ArCO2Iso9352_O2_300
+  1800 ArCO2Iso9352_O2_300
+  150 ArCO2Iso9352_O2_300_H2O_1000
+  300 ArCO2Iso9352_O2_300_H2O_1000
+  450 ArCO2Iso9352_O2_300_H2O_1000
+  625 ArCO2Iso9352_O2_300_H2O_1000
+  900 ArCO2Iso9352_O2_300_H2O_1000
+  1250 ArCO2Iso9352_O2_300_H2O_1000
+  1800 ArCO2Iso9352_O2_300_H2O_1000
+)

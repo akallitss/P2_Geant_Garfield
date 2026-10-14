@@ -1,0 +1,22 @@
+# HTCondor: mesh transparency for one drift gap (DAG node, VARS gap=<mm>),
+# corrected geometry, drift electrode 250 V above the mesh (field 250 V/gap),
+# all six gases, interface-crossing check + null-collision steps.
+# Run through scripts/garfield/gaps.dag (after the COMSOL solve of that gap).
+executable     = scripts/garfield/run_transparency.sh
+cells          = /eos/user/a/akallits/p2_sim/comsol/p2_sps/gaps_gap150
+gases          = /eos/user/a/akallits/p2_sim/gas_tables
+outdir         = /eos/user/a/akallits/p2_sim/transparency/gaps
+output         = condor_transp/gaps_h$(gap)mm_$(gas).out
+error          = condor_transp/gaps_h$(gap)mm_$(gas).err
+log            = condor_transp/gaps.log
+request_memory = 10 GB
++JobFlavour    = "workday"
+arguments      = transp $(cells)/h$(gap)mm $(gases)/$(gas).gas $(outdir)/h$(gap)mm_$(gas) 5000 $(seed) x,null
+queue gas, seed from (
+  ArIso        1
+  ArIso9010    2
+  NeIso        3
+  NeIso8515    4
+  ArCO2Iso9352 5
+  ArCF4Iso     6
+)

@@ -1,0 +1,49 @@
+# HTCondor: Heed primary ionization of 100 MeV electrons in the P2 drift gas,
+# same gases / gaps / angles as the Geant4 rnd2026 electron runs (plan item 2).
+#   condor_submit scripts/garfield/heed_mip.sub
+executable     = scripts/garfield/run_heed.sh
+outdir         = /eos/user/a/akallits/p2_sim/heed
+output         = condor_transp/heed_$(gas)_$(gap)_$(th).out
+error          = condor_transp/heed_$(gas)_$(gap)_$(th).err
+log            = condor_transp/heed.log
+request_memory = 2 GB
++JobFlavour    = "longlunch"
+arguments      = $(gas) $(gap) $(th) 200000 $(outdir)/heed_$(gas)_$(gap)mm_th$(th) e- 1e8 $(Process)
+queue gas, gap, th from (
+  ArIso 3.964 0
+  ArIso 3.964 20
+  ArIso 3.964 40
+  ArIso 5 0
+  ArIso 5 20
+  ArIso 5 40
+  ArIso9010 3.964 0
+  ArIso9010 3.964 20
+  ArIso9010 3.964 40
+  ArIso9010 5 0
+  ArIso9010 5 20
+  ArIso9010 5 40
+  NeIso 3.964 0
+  NeIso 3.964 20
+  NeIso 3.964 40
+  NeIso 5 0
+  NeIso 5 20
+  NeIso 5 40
+  NeIso8515 3.964 0
+  NeIso8515 3.964 20
+  NeIso8515 3.964 40
+  NeIso8515 5 0
+  NeIso8515 5 20
+  NeIso8515 5 40
+  ArCO2Iso9352 3.964 0
+  ArCO2Iso9352 3.964 20
+  ArCO2Iso9352 3.964 40
+  ArCO2Iso9352 5 0
+  ArCO2Iso9352 5 20
+  ArCO2Iso9352 5 40
+  ArCF4Iso 3.964 0
+  ArCF4Iso 3.964 20
+  ArCF4Iso 3.964 40
+  ArCF4Iso 5 0
+  ArCF4Iso 5 20
+  ArCF4Iso 5 40
+)

@@ -21,7 +21,7 @@ mkdir -p sweep logs
 for E in "$@"; do
     VC=$(echo "-$VM - $E * 0.2" | bc -l | sed 's/0*$//; s/\.$//')
     cls="SolveSweep${TAG}_E$E"
-    sed "s/@E@/$E/g; s/@VC@/$VC/g; s/@MH@/$MH/g; s/@TAG@/$TAG/g; s/@PITCH@/$PITCH/g; s/@VM@/$VM/g; s/SolveSweep_E$E/$cls/g" \
+    sed "s/@E@/$E/g; s/@VC@/$VC/g; s/@MH@/$MH/g; s/@TAG@/$TAG/g; s/@PITCH@/$PITCH/g; s/@VM@/$VM/g; s#@OUT@#h2mm_sweep$TAG/E$E#g; s/@H@/2/g; s/SolveSweep_E$E/$cls/g" \
         SolveSweep.java.in > "sweep/$cls.java"
     (cd sweep && $C compile "$cls.java")
     mkdir -p "/eos/user/a/akallits/p2_sim/comsol/p2_sps/h2mm_sweep$TAG/E$E"

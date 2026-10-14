@@ -26,7 +26,7 @@ struct Mix { std::vector<std::pair<std::string, double>> parts; };
 
 void make_gas_table(const char* gas = "ArIso", const char* out = "ArIso",
                     int ncoll = 10, int nDrift = 24, int nAmp = 16) {
-  const std::map<std::string, Mix> mixtures = {
+  std::map<std::string, Mix> mixtures = {
     {"ArIso",        {{{"ar", 95.}, {"ic4h10", 5.}}}},
     {"ArIso9010",    {{{"ar", 90.}, {"ic4h10", 10.}}}},
     {"NeIso",        {{{"ne", 95.}, {"ic4h10", 5.}}}},
@@ -34,6 +34,23 @@ void make_gas_table(const char* gas = "ArIso", const char* out = "ArIso",
     {"ArCO2Iso9352", {{{"ar", 93.}, {"co2", 5.}, {"ic4h10", 2.}}}},
     {"ArCF4Iso",     {{{"ar", 88.}, {"cf4", 10.}, {"ic4h10", 2.}}}},
   };
+  // Contaminated SPS gas (2026-10-14): Ar/CO2/iso 93/5/2 + O2 and/or H2O,
+  // to test whether impurities explain the SPS drift scan. The base gas is
+  // scaled by (1 - impurity) so the fractions add up to 100 %.
+  // No O2/H2O monitor at SPS; 4 l/h through plastic tubing.
+  auto contaminated = [](double ppmO2, double ppmH2O) {
+    const double f = 1. - 1.e-6 * (ppmO2 + ppmH2O);
+    Mix x{{{"ar", 93. * f}, {"co2", 5. * f}, {"ic4h10", 2. * f}}};
+    if (ppmO2 > 0.) x.parts.push_back({"o2", 1.e-4 * ppmO2});
+    if (ppmH2O > 0.) x.parts.push_back({"h2o", 1.e-4 * ppmH2O});
+    return x;
+  };
+  mixtures["ArCO2Iso9352_O2_100"] = contaminated(100., 0.);
+  mixtures["ArCO2Iso9352_O2_300"] = contaminated(300., 0.);
+  mixtures["ArCO2Iso9352_O2_1000"] = contaminated(1000., 0.);
+  mixtures["ArCO2Iso9352_H2O_500"] = contaminated(0., 500.);
+  mixtures["ArCO2Iso9352_H2O_2000"] = contaminated(0., 2000.);
+  mixtures["ArCO2Iso9352_O2_300_H2O_1000"] = contaminated(300., 1000.);
   auto it = mixtures.find(gas);
   if (it == mixtures.end()) {
     std::cerr << "make_gas_table: unknown gas " << gas << "\n";
@@ -42,11 +59,9 @@ void make_gas_table(const char* gas = "ArIso", const char* out = "ArIso",
   const auto& p = it->second.parts;
 
   Garfield::MediumMagboltz m;
-  if (p.size() == 2)
-    m.SetComposition(p[0].first, p[0].second, p[1].first, p[1].second);
-  else
-    m.SetComposition(p[0].first, p[0].second, p[1].first, p[1].second,
-                     p[2].first, p[2].second);
+  auto g = [&](size_t i) { return i < p.size() ? p[i].first : std::string(""); };
+  auto f = [&](size_t i) { return i < p.size() ? p[i].second : 0.; };
+  m.SetComposition(g(0), f(0), g(1), f(1), g(2), f(2), g(3), f(3), g(4), f(4));
   m.SetTemperature(293.15);   // K
   m.SetPressure(760.);        // Torr; SPS/lab chambers run at ~1 atm
 

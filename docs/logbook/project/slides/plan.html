@@ -1,0 +1,11 @@
+<section id="plan" style="background:#FFFFFF;color:#111111;font-family:Arial, sans-serif;padding:128px;padding-top:96px;display:flex;flex-direction:column;gap:20px">
+<h2 style="font-size:56px;font-weight:600">Plan · validation and next steps (14 Oct)</h2>
+<table style="font-size:21px;color:#111111"><tr><th style="width:4%">#</th><th style="width:30%">Item</th><th style="width:44%">How</th><th style="width:22%">Status</th></tr>
+<tr><td>1</td><td>Physics list vs Matthieu (photons)</td><td>His: Livermore PE / Compton / Rayleigh, Livermore e⁻ ionisation + brems, patched Goudsmit-Saunderson msc. Ours: option4 + fluo/Auger/PIXE. Same stack, both lists, P(detected | E)</td><td>next</td></tr>
+<tr><td>2</td><td>Geant4 vs Garfield/Heed, 100 MeV e⁻</td><td>Heed in a bare gas slab vs Geant4 nPrimDrift, 6 gases × 2 gaps × 3 angles</td><td><b>done</b>: argon disagrees</td></tr>
+<tr><td>3</td><td>T into Stage B</td><td>table per gas and drift field, wire losses only (attachment already in Stage B)</td><td>after 4, 5, 6</td></tr>
+<tr><td>4</td><td>Ionization within 100 µm of the mesh</td><td>cluster depths in the Geant4 photon events, split by conversion volume</td><td><b>done</b></td></tr>
+<tr><td>5</td><td>Gas and transparency validation</td><td>ILC-TPC Magboltz plots; drift velocity vs diffusion map; SPS drift scans</td><td><b>done</b>: SPS edge ~150–200 V/cm off</td></tr>
+<tr><td>6</td><td>Pillars vs the insulation masks</td><td>re-parse V1 / CERN masks, match Geant4 one by one; Stage B pillar loss</td><td><b>geometry done</b></td></tr></table>
+<aside>Order agreed with Alexandra 2026-10-14: quick checks (4, 6, 5) and the Heed comparison first, then T into Stage B with the answers, physics list in parallel. SPS conditions from the corrected run_configs (mpgd26_workspace/eos_inventory): Ar/CO2/iso 93/5/2 for runs up to run_58 (DREAM nominal 700/450 V drift/mesh, VMM 750/450 V); runs 59–72 recorded as Ar/iso 95/5, to be confirmed (Ar/CF4/iso 88/10/2?). Ar/iso 95/5 data come from the cosmic bench (separate analysis). Det1–4 Saclay pillars (mask V1), det5 CERN.</aside>
+</section>

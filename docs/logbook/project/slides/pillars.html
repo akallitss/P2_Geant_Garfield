@@ -1,0 +1,13 @@
+<section id="pillars" style="background:#FFFFFF;color:#111111;font-family:Arial, sans-serif;padding:128px;padding-top:96px;display:flex;flex-direction:column;gap:20px">
+<h2 style="font-size:56px;font-weight:600">Pillars · Geant4 vs the insulation masks</h2>
+<div style="display:flex;gap:40px;align-items:start">
+<img src="/_blob/5ee8f1fef64c40e4aa6f47787a94710e" alt="Close-up of pillar positions around a big pillar: Geant4 pillars match the V1 mask exactly; V2 and V3B_final masks shown for comparison" style="width:760px;height:690px;object-fit:contain">
+<table style="font-size:20px;color:#111111;flex:1"><tr><th>Mask</th><th>small pillars</th><th>Ø</th><th>grid</th><th>area</th></tr>
+<tr><td>V1 (det1–4)</td><td>12 477</td><td>0.8 mm</td><td>4 mm</td><td>64 cm²</td></tr>
+<tr><td>V2</td><td>11 678</td><td>0.8 mm</td><td>4 mm</td><td>60 cm²</td></tr>
+<tr><td>V3B_final (next)</td><td>17 242</td><td>0.5 mm</td><td>2 mm</td><td>35 cm²</td></tr>
+<tr><td>CERN (det5)</td><td>41 366</td><td>0.5 mm</td><td>2 mm</td><td>83 cm²</td></tr></table>
+</div>
+<ul style="font-size:23px;line-height:1.35"><li>Geant4 = V1 for det1–4 and = CERN mask for det5: every pillar matched, max offset 0.02 µm; 6 V1 pillars hidden under big pillars dropped on purpose. All have 5 × Ø6.15 mm big pillars</li><li>Open: Stage B does not remove electrons that land on a pillar yet; real pillar size after development not measured</li></ul>
+<aside>scripts/gerber/check_pillars.py, docs/results/pillars/. Masks from Detector_Drawings (Version_Apr26 V1/V2, Version_Sept26 V3B_final) and design/gerbers (CERN). The repo V1 copy is byte-identical to Detector_Drawings V1.</aside>
+</section>

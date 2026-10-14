@@ -1,0 +1,29 @@
+# DAG: COMSOL solve per drift gap, then the Garfield transparency jobs of
+# that gap. From the repo root on lxplus:
+#   (cd scripts/comsol && bash make_gaps.sh 4 5 6 7 8)
+#   condor_submit_dag -outfile_dir condor_transp scripts/garfield/gaps.dag
+JOB C4 mesh_cell.sub DIR scripts/comsol
+VARS C4 cls="sweep/SolveGap_h4mm"
+JOB G4 scripts/garfield/transparency_gaps.sub
+VARS G4 gap="4"
+PARENT C4 CHILD G4
+JOB C5 mesh_cell.sub DIR scripts/comsol
+VARS C5 cls="sweep/SolveGap_h5mm"
+JOB G5 scripts/garfield/transparency_gaps.sub
+VARS G5 gap="5"
+PARENT C5 CHILD G5
+JOB C6 mesh_cell.sub DIR scripts/comsol
+VARS C6 cls="sweep/SolveGap_h6mm"
+JOB G6 scripts/garfield/transparency_gaps.sub
+VARS G6 gap="6"
+PARENT C6 CHILD G6
+JOB C7 mesh_cell.sub DIR scripts/comsol
+VARS C7 cls="sweep/SolveGap_h7mm"
+JOB G7 scripts/garfield/transparency_gaps.sub
+VARS G7 gap="7"
+PARENT C7 CHILD G7
+JOB C8 mesh_cell.sub DIR scripts/comsol
+VARS C8 cls="sweep/SolveGap_h8mm"
+JOB G8 scripts/garfield/transparency_gaps.sub
+VARS G8 gap="8"
+PARENT C8 CHILD G8

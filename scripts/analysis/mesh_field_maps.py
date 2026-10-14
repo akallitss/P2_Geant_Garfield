@@ -454,6 +454,47 @@ def fig_ek(d, out, e_drift=638.0):
         print(f"{g:13s} eps_k {ek:.3f} eV  wire {w:.2f} +- {er:.2f} %")
 
 
+def fig_gaps(d, out):
+    """Drift-gap scan at a fixed 250 V above the mesh (gaps/)."""
+    sd = d / "gaps"
+    if not sd.exists():
+        return
+    fig, ax = plt.subplots(figsize=(8.5, 5), constrained_layout=True)
+    cols = {"ArIso": "#D62728", "ArIso9010": "#FF9F80", "NeIso": "#2CA02C",
+            "NeIso8515": "#17BECF", "ArCO2Iso9352": "#9467BD", "ArCF4Iso": "#8C564B"}
+    rows = []
+    for g in GASES:
+        pts = []
+        for gap in (4, 5, 6, 7, 8):
+            p = sd / f"h{gap}mm_{g}_electrons.txt"
+            if not p.exists():
+                continue
+            e = read_transp(p)
+            t = e[:, 6].mean()
+            wire = ((e[:, 6] < 1) & (e[:, 2] == -5)).mean()
+            pts.append((gap, t, wire, math.sqrt(t * (1 - t) / len(e))))
+            rows.append({"gap_mm": gap, "E_drift": round(250 / (gap * 0.1)), "gas": g,
+                         "T": round(t, 4), "lost_on_wires": round(wire, 4),
+                         "attached": round(1 - t - wire, 4)})
+        if pts:
+            a = np.array(pts)
+            ax.errorbar(a[:, 0], 100 * a[:, 1], 100 * a[:, 3], marker="o", color=cols[g],
+                        label=LABEL[g], capsize=2)
+    ax.set_xticks([4, 5, 6, 7, 8],
+                  [f"{g} mm\n{250 / (g * 0.1):.0f} V/cm" for g in (4, 5, 6, 7, 8)])
+    ax.set_ylabel("electrons reaching the gap [%]")
+    ax.set_ylim(90, 100.5)
+    ax.legend(fontsize=8, loc="lower right")
+    ax.set_title("Drift gap at a fixed 250 V above the mesh (mesh −450 V): longer gap = weaker field",
+                 fontsize=10)
+    fig.savefig(out / "fig_transp_gaps.png", dpi=160)
+    plt.close(fig)
+    with open(out / "transparency_gaps.csv", "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=list(rows[0]))
+        w.writeheader()
+        w.writerows(rows)
+
+
 def main():
     d = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else ".")
     out = pathlib.Path(__file__).resolve().parents[2] / "docs" / "results" / "mesh"
@@ -472,6 +513,7 @@ def main():
     fig_nik(d, out)
     fig_review(d, out)
     fig_ek(d, out)
+    fig_gaps(d, out)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 // SolveSweep.java.in -- template for the drift-field sweep of the h2mm cell
 // (mesh -@VM@ V, pads 0, drift field @E@ V/cm, wire spacing @PITCH@ um, wire
-// centre plane meshHeight @MH@ um); make_sweep.sh fills the @...@ fields
+// centre plane meshHeight @MH@ um, drift height @H@ mm); make_sweep.sh /
+// make_gaps.sh fill the @...@ fields
 // and compiles one class per field (COMSOL batch classes take no arguments).
 // The rest is as in SolveP2MeshCell.java, from which these comments come.
 //
@@ -39,7 +40,7 @@ public class SolveSweep_E@E@ {
 
   public static Model run() throws java.io.IOException {
     Model m;
-    String[][] cases = {{"h2mm_sweep@TAG@/E@E@", "2[mm]", "@VC@[V]"}};
+    String[][] cases = {{"@OUT@", "@H@[mm]", "@VC@[V]"}};
     for (String[] c : cases) {
       m = ModelUtil.load("Model", IN);
       m.param().set("pitch", "2*@PITCH@[um]");
