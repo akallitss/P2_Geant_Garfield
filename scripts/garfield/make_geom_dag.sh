@@ -16,6 +16,11 @@
 # Base cells at 450 V already exist (h2mm_sweep_gap150).
 # The bottom of the calendered mesh sits on the pillars: MH = gap + 1.65 rWire.
 #
+# Cells and results that already exist are written as DONE nodes, so the script
+# can be re-run to resume. COMSOL nodes: at most $MAXCOMSOL at once (the CERN
+# AC/DC licence seats run out: 2026-10-14 most solves failed with "Licensed
+# number of users already reached"), each retried up to 10 times.
+#
 #   bash scripts/garfield/make_geom_dag.sh      (on lxplus, from the repo root)
 #   condor_submit_dag -outfile_dir condor_transp scripts/garfield/geom.dag
 set -e
@@ -26,7 +31,9 @@ TR=/eos/user/a/akallits/p2_sim/transparency/geom
 GN=/eos/user/a/akallits/p2_sim/gain/geom
 mkdir -p condor_transp "$TR" "$GN"
 dag=scripts/garfield/geom.dag
+MAXCOMSOL="${MAXCOMSOL:-2}"
 echo "# geometry study DAG, written by make_geom_dag.sh $(date -I)" > $dag
+echo "MAXJOBS comsol $MAXCOMSOL" >> $dag
 seed=100
 
 mh() { echo "$1 + 1.65 * $2" | bc -l | sed 's/0*$//; s/\.$//'; }
@@ -34,20 +41,27 @@ mh() { echo "$1 + 1.65 * $2" | bc -l | sed 's/0*$//; s/\.$//'; }
 # cell TAG MH PITCH VM RW "fields" "gases" gain(0/1)
 cell() {
     local tag=$1 m=$2 p=$3 vm=$4 rw=$5 fields=$6 gases=$7 gain=$8
-    (cd scripts/comsol && NOSUBMIT=1 MH=$m PITCH=$p VM=$vm RW=$rw TAG=$tag bash make_sweep.sh $fields >/dev/null)
+    [ -n "$NOCOMPILE" ] || (cd scripts/comsol && NOSUBMIT=1 MH=$m PITCH=$p VM=$vm RW=$rw TAG=$tag bash make_sweep.sh $fields >/dev/null)
     for E in $fields; do
-        local c="C${tag}_E$E"
-        echo "JOB $c mesh_cell.sub DIR scripts/comsol" >> $dag
+        local c="C${tag}_E$E" done=""
+        [ -s "$CS/h2mm_sweep$tag/E$E/potential.txt" ] && done=" DONE"
+        echo "JOB $c mesh_cell.sub DIR scripts/comsol$done" >> $dag
         echo "VARS $c cls=\"sweep/SolveSweep${tag}_E$E\"" >> $dag
+        echo "CATEGORY $c comsol" >> $dag
+        echo "RETRY $c 10" >> $dag
         for g in $gases; do
             local n="T${tag}_E${E}_$g"
             seed=$((seed + 1))
-            echo "JOB $n scripts/garfield/transparency_geom.sub" >> $dag
+            done=""
+            grep -qs "^TRANSPARENCY" "condor_transp/geom_${tag#_}_E${E}_$g.out" && done=" DONE"
+            echo "JOB $n scripts/garfield/transparency_geom.sub$done" >> $dag
             echo "VARS $n cell=\"$CS/h2mm_sweep$tag/E$E\" gas=\"$g\" out=\"$TR/${tag#_}_E${E}_$g\" name=\"${tag#_}_E${E}_$g\" seed=\"$seed\"" >> $dag
             echo "PARENT $c CHILD $n" >> $dag
             if [ "$gain" = 1 ] && [ "$E" = 625 ]; then
                 n="N${tag}_E${E}_$g"
-                echo "JOB $n scripts/garfield/gain_geom.sub" >> $dag
+                done=""
+                grep -qs "^GAIN" "condor_transp/gain_${tag#_}_$g.out" && done=" DONE"
+                echo "JOB $n scripts/garfield/gain_geom.sub$done" >> $dag
                 echo "VARS $n cell=\"$CS/h2mm_sweep$tag/E$E\" gas=\"$g\" out=\"$GN/${tag#_}_$g\" name=\"${tag#_}_$g\"" >> $dag
                 echo "PARENT $c CHILD $n" >> $dag
             fi
@@ -68,7 +82,9 @@ for vm in 430 470; do
 done
 # base cell at 450 V (already solved): gain only
 for g in $GASES; do
-    echo "JOB N_g150_E625_$g scripts/garfield/gain_geom.sub" >> $dag
+    done=""
+    grep -qs "^GAIN" "condor_transp/gain_g150_$g.out" && done=" DONE"
+    echo "JOB N_g150_E625_$g scripts/garfield/gain_geom.sub$done" >> $dag
     echo "VARS N_g150_E625_$g cell=\"$CS/h2mm_sweep_gap150/E625\" gas=\"$g\" out=\"$GN/g150_$g\" name=\"g150_$g\"" >> $dag
 done
-echo "wrote $dag: $(grep -c '^JOB C' $dag) COMSOL, $(grep -c '^JOB T' $dag) transparency, $(grep -c '^JOB N' $dag) gain jobs"
+echo "wrote $dag: $(grep -c '^JOB C' $dag) COMSOL ($(grep -c '^JOB C.* DONE' $dag) done), $(grep -c '^JOB T' $dag) transparency ($(grep -c '^JOB T.* DONE' $dag) done), $(grep -c '^JOB N' $dag) gain ($(grep -c '^JOB N.* DONE' $dag) done)"

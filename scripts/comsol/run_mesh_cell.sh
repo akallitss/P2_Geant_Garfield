@@ -10,3 +10,9 @@ $C batch -np 8 -nosave -tmpdir "$_CONDOR_SCRATCH_DIR" \
     -recoverydir "$_CONDOR_SCRATCH_DIR" \
     -inputfile "$(basename "$1")" -batchlog solve.log
 cat solve.log
+# COMSOL batch exits 0 even when the class fails (e.g. no free licence seat):
+# fail the job so DAGMan retries it instead of starting Garfield on no map
+if grep -q "Error running java class\|Could not obtain license" solve.log; then
+    echo "run_mesh_cell: COMSOL error, failing the job" >&2
+    exit 1
+fi
