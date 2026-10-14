@@ -1,0 +1,15 @@
+<section id="geomrun" style="background:#FFFFFF;color:#111111;font-family:Arial, sans-serif;padding:128px;padding-top:96px;display:flex;flex-direction:column;gap:28px">
+<h2 style="font-size:56px;font-weight:600">Geometry and gain runs (HTCondor 12548384)</h2>
+<div style="display:flex;gap:48px">
+<div style="flex:1;display:flex;flex-direction:column;gap:12px">
+<h3 style="font-size:32px;font-weight:600">Mesh / gap variations</h3>
+<ul style="font-size:24px;line-height:1.4"><li>Gap 120 / 135 / 165 µm (base 150)</li><li>Wire Ø 16 / 20 µm (base 18)</li><li>Spacing 66 / 73 µm = opening 48 / 55 µm</li><li>Mesh 415 V (cosmic det1)</li><li>7 drift fields each; Ar/CO2/iso + Ar/iso</li><li>64 COMSOL solves → 121 transparency jobs</li></ul>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px">
+<h3 style="font-size:32px;font-weight:600">Gain slope</h3>
+<ul style="font-size:24px;line-height:1.4"><li>α integrated along drift lines in the real cell, Penning r = 0–0.7</li><li>Mesh 430 / 450 / 470 V × 4 gaps</li><li>Base cell, 450 V: G ≈ 25 (r = 0), ≈ 700 (r = 0.2)</li><li>Measured e-folding: SPS 22–32 V, Fe55 det2 28 V</li><li>Slope + absolute gain → gap, independently of r</li></ul>
+</div>
+</div>
+<p style="font-size:24px;color:#555555">Pitfall found: the Magboltz tables have no points between 3 and 15 kV/cm; the interpolated α there is ~10³³ /cm, so the gain is integrated with the table only above 15 kV/cm.</p>
+<aside>Scripts: scripts/garfield/make_geom_dag.sh, mesh_gain.cc, transparency_geom.sub, gain_geom.sub; COMSOL template now takes the wire radius (rCut = 1.1 rWire). Outputs on EOS p2_sim/transparency/geom and p2_sim/gain/geom. Commit 94f0f92. Absolute gain still needs the DREAM ADC to fC conversion.</aside>
+</section>
