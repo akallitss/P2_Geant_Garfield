@@ -14,7 +14,7 @@ mkdir -p sweep logs
 for G in "$@"; do
     VC=$(echo "-450 - $DV" | bc -l)
     cls="SolveGap_h${G}mm"
-    sed "s/@E@/$G/g; s/@VC@/$VC/g; s/@MH@/164.85/g; s/@PITCH@/68/g; s/@VM@/450/g; \
+    sed "s/@E@/$G/g; s/@VC@/$VC/g; s/@MH@/164.85/g; s/@PITCH@/68/g; s/@VM@/450/g; s/@RW@/9/g; \
          s#@OUT@#gaps_gap150/h${G}mm#g; s/@H@/$G/g; s/SolveSweep_E$G/$cls/g" \
         SolveSweep.java.in > "sweep/$cls.java"
     grep -q "class $cls" "sweep/$cls.java" || { echo "class name not set"; exit 1; }

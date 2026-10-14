@@ -19,8 +19,10 @@ src="$here/scripts/garfield/mesh_transparency.cc"
 exe="$P2_GARFIELD_INSTALL/../bin/mesh_transparency"
 if [ ! -x "$exe" ] || [ "$src" -nt "$exe" ]; then
     mkdir -p "$(dirname "$exe")"
-    g++ -O2 -std=c++20 -o "$exe" "$src" -I"$P2_GARFIELD_INSTALL/include" \
+    # build to a private name and rename: parallel jobs must not race
+    g++ -O2 -std=c++20 -o "$exe.$(hostname).$$" "$src" -I"$P2_GARFIELD_INSTALL/include" \
         $(root-config --cflags --libs) -L"$P2_GARFIELD_INSTALL/lib64" -lGarfield -lGarfieldRandom \
         -Wl,-rpath,"$P2_GARFIELD_INSTALL/lib64"
+    mv -f "$exe.$(hostname).$$" "$exe"
 fi
 "$exe" "$1" "$2" "$3" "$4" "${5:-2000}" "${6:-1}" "${7:-}"

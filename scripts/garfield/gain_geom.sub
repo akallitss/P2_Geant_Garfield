@@ -1,0 +1,11 @@
+# HTCondor: Townsend gain along drift lines for one cell of the geometry study
+# (DAG node of geom.dag, VARS cell / gas / out / name), Penning r 0-0.7,
+# 20 x 20 start points.
+executable     = scripts/garfield/run_gain.sh
+output         = condor_transp/gain_$(name).out
+error          = condor_transp/gain_$(name).err
+log            = condor_transp/gain.log
+request_memory = 8 GB
++JobFlavour    = "workday"
+arguments      = $(cell) /eos/user/a/akallits/p2_sim/gas_tables/$(gas).gas $(out) 0,0.1,0.2,0.3,0.4,0.5,0.6,0.7 20
+queue

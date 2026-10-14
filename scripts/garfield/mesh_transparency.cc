@@ -48,7 +48,7 @@
 #include "Garfield/Sensor.hh"
 
 namespace {
-const double kHalf = 0.0068;       // half cell [cm] (68 um)
+double kHalf = 0.0068;  // half cell [cm] (68 um), reset from the map's bounding box
 // Above / below the woven wires [cm]: found from the map at a wire crossing
 // (solid extent +- 5 um); 170 / 130 um for the colleague's meshHeight 150.
 double kMeshTop = 0.0170;
@@ -144,10 +144,21 @@ void mesh_transparency(const char* mode = "probe", const char* cell = ".",
     Medium* med = fm.GetMedium(x, y, z);
     return med != nullptr && med->IsDriftable();
   };
+  // Cell = one weave period, -kHalf..kHalf; wires cross at (+-kHalf/2, +-kHalf/2)
+  // (0.0068 / 0.0034 cm for the 68 um spacing).
+  {
+    // the bounding box is infinite with periodicity: use the unit cell
+    double cx0, cy0, cz0, cx1, cy1, cz1;
+    fm.GetElementaryCell(cx0, cy0, cz0, cx1, cy1, cz1);
+    kHalf = 0.5 * (cx1 - cx0);
+  }
+  const double xc = 0.5 * kHalf;
+  std::printf("cell half width %.2f um, wire crossing at (%.2f, %.2f) um\n",
+              kHalf * 1e4, xc * 1e4, xc * 1e4);
   {
     double zlo = -1., zhi = -1.;
     for (double z = 0.; z <= 0.05; z += 0.00002) {
-      if (!inGas(0.0034, 0.0034, z)) {
+      if (!inGas(xc, xc, z)) {
         if (zlo < 0.) zlo = z;
         zhi = z;
       }

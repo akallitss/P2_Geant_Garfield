@@ -1,6 +1,7 @@
 // SolveSweep.java.in -- template for the drift-field sweep of the h2mm cell
 // (mesh -@VM@ V, pads 0, drift field @E@ V/cm, wire spacing @PITCH@ um, wire
-// centre plane meshHeight @MH@ um, drift height @H@ mm); make_sweep.sh /
+// radius @RW@ um, wire centre plane meshHeight @MH@ um, drift height @H@ mm);
+// make_sweep.sh /
 // make_gaps.sh fill the @...@ fields
 // and compiles one class per field (COMSOL batch classes take no arguments).
 // The rest is as in SolveP2MeshCell.java, from which these comments come.
@@ -45,6 +46,14 @@ public class SolveSweep_E@E@ {
       m = ModelUtil.load("Model", IN);
       m.param().set("pitch", "2*@PITCH@[um]");
       m.param().set("meshHeight", "@MH@[um]");
+      // wire radius; the calendering cut follows it (rCut = 1.1 rWire, the
+      // colleague's ratio), so the mesh stays 3.3 rWire thick
+      m.param().set("rWire", "@RW@[um]");
+      for (String p : m.param().varnames())
+        if (p.equals("rCut")) {
+          System.out.println("   model rCut = " + m.param().get("rCut") + " -> 1.1*rWire");
+          m.param().set("rCut", "1.1*rWire");
+        }
       m.param().set("height", c[1]);
       m.param().set("VAnode", "0[V]");
       m.param().set("VMesh", "-@VM@[V]");
@@ -53,6 +62,8 @@ public class SolveSweep_E@E@ {
       String dir = OUT + "/" + c[0];
       // the folder is made by run_mesh_cell.sh: COMSOL forbids Java file I/O
       System.out.println("== case " + c[0] + ": height " + c[1] + ", VCathode " + c[2]);
+      for (String p : m.param().varnames())
+        System.out.println("   PARAM " + p + " = " + m.param().get(p));
       long t0 = System.currentTimeMillis();
       m.study("std1").run();
       System.out.println("   std1 solved in " + (System.currentTimeMillis() - t0) / 1000 + " s");

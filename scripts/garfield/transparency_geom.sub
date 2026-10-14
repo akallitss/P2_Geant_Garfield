@@ -1,0 +1,11 @@
+# HTCondor: mesh transparency for one cell of the geometry study (DAG node of
+# geom.dag, VARS cell / gas / out / name / seed), interface-crossing check +
+# null-collision steps, 3000 electrons.
+executable     = scripts/garfield/run_transparency.sh
+output         = condor_transp/geom_$(name).out
+error          = condor_transp/geom_$(name).err
+log            = condor_transp/geom.log
+request_memory = 10 GB
++JobFlavour    = "workday"
+arguments      = transp $(cell) /eos/user/a/akallits/p2_sim/gas_tables/$(gas).gas $(out) 3000 $(seed) x,null
+queue
