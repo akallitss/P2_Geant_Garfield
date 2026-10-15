@@ -46,13 +46,13 @@ MESH_WIRE    = 0.018    # woven SS mesh 45/18 (2026-10-06): wire diameter
 MESH_OPEN    = 0.045    #   and opening; pitch = wire + opening = 63 um
 T_MESH       = 2 * MESH_WIRE          # weave height, effective-density slab
 MESH_FILL    = math.pi * MESH_WIRE / (4 * (MESH_WIRE + MESH_OPEN))  # ~0.22
-FRONT_GAP    = 3.949    # window -> drift foil = frame top 8.0 - ledge 4.0 - foil 0.051
+FRONT_GAP    = 3.950    # window -> drift foil = frame top 8.0 - ledge 4.0 - foil 0.050
 CATH_GAP     = 0.0      # 0 = one drift foil (2026-10-06); > 0 = old two-foil model
 BACK_GAP     = 1.0      # carbon back-frame depth; 1 mm normal, <=3 this prod.
 BULGE_FRONT  = 10.0     # overpressure sag, both sides (Alexandra 2026-10-06)
 BULGE_BACK   = 10.0
 T_WINDOW     = 0.050    # outer mylar, ~50 um (Alexandra 2026-10-15; was 10 um)
-T_CATH_MYLAR = 0.050    # drift-cathode mylar, ~50 um (2026-10-15; was 120 um)
+T_CATH_MYLAR = 0.049    # drift foil 50 um incl. 1 um Al (2026-10-15; was 120 um)
 T_CATH_AL    = 0.001    # its aluminization, facing the drift gas
 FCU_COVERAGE = 0.983    # Cu area fraction over the active area, from gerbers
 BCU_COVERAGE = 0.174    #   (B.Cu = signal lines; radial 0.03->0.26);

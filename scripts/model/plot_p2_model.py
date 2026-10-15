@@ -546,7 +546,7 @@ def fig_questions(outdir):
     rows = [
         ("fwin",  "front gas window — mylar", "50 µm",      0.95, "#63b8d8", C_OK),
         ("fgas",  "front gas gap",            "3.95 mm",    1.20, "#dff2fa", C_MEAS),
-        ("cath",  "drift cathode — Al-mylar", "50 µm + 1 µm Al",
+        ("cath",  "drift cathode — Al-mylar", "49 µm + 1 µm Al",
                                                             0.60, "#a8e0a8", C_OK),
         ("drift", "DRIFT GAS",                "4 mm",       1.30, "#b3ccff", C_MEAS),
         ("mesh",  "micromesh — woven SS 45/18 µm",

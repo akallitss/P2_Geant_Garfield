@@ -727,9 +727,9 @@ G4VPhysicalVolume* DetectorConstruction::Construct() {
 // WINDOW plane (top of the gas frame); the beam travels along +z:
 //
 //   front window: 50 um mylar, bulged (terraced dome, apex upstream) z < 0
-//   front gas gap                        z = 0 .. 3.949 mm
-//   drift cathode: one 50 um mylar foil + 1 um Al facing the drift gas,
-//     lying on the frame ledge (Alexandra 2026-10-15; was 120 um)
+//   front gas gap                        z = 0 .. 3.950 mm
+//   drift cathode: one 50 um foil = 49 um mylar + 1 um Al facing the drift
+//     gas, on the frame ledge (Alexandra 2026-10-15; was 120 um + 1 um)
 //   drift gas   [sensitive]              3.964 mm (4 mm frame - mesh)
 //   micromesh   (woven SS 45 um opening / 18 um wire -> 36 um slab of
 //     effective-density steel; areal mass matches the woven mesh)

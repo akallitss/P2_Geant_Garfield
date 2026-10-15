@@ -27,9 +27,9 @@ upstream of the front window; move it with `--gun-x/--gun-y`.
 | z [mm] | volume | material / thickness | source |
 |---|---|---|---|
 | −10.05 … 0 | `FrontWindow_*` | **50 µm** mylar, bulged, sag 10 mm | Alexandra 2026-10-15: "all the mylar thicknesses are ~50 µm" (was 10 µm, 2026-10-06, as in P2Sim); bulge model below |
-| 0 … 3.949 | `FrontGas` | chamber gas, 3.949 mm | frame STEP V2: top face (8.0) − ledge (4.0) − foil (0.051) |
-| 3.949 | `DriftCathode_Mylar` | **50 µm** mylar, one foil on the frame ledge | Alexandra 2026-10-15 (~50 µm; was 120 µm, 2026-10-06) |
-| 3.999 | `DriftCathode_Al` | 1 µm Al, facing the drift gas | **confirmed** (2026-10-06) |
+| 0 … 3.950 | `FrontGas` | chamber gas, 3.950 mm | frame STEP V2: top face (8.0) − ledge (4.0) − foil (0.050) |
+| 3.950 | `DriftCathode_Mylar` | **49 µm** mylar, one foil on the frame ledge | Alexandra 2026-10-15: foil ~50 µm including the Al (was 120 µm, 2026-10-06) |
+| 3.999 | `DriftCathode_Al` | 1 µm Al, facing the drift gas | counted inside the 50 µm foil; real Al likely ~100 nm (Alexandra 2026-10-15), 1 µm kept for now |
 | 4.0 … 7.964 | `DriftGas` *(sensitive)* | **3.964 mm** = 4.0 frame ledge − 36 µm mesh | frame V2 (`P2_Frame_V2.0.stp`) standing on the Dynamask level with the mesh (2026-10-06); campaign scans 1–4 mm |
 | 7.964 | `Micromesh` | woven SS, Geant4 still **45 µm opening / 18 µm wire** (pitch 63 µm) → 36 µm slab, ρ×0.224 | **superseded by the measurement** (Alexandra 2026-10-09, microscope): **18 µm wire, 50 µm opening, 68 µm pitch**, used by the COMSOL/Garfield cell; Geant4 default not yet switched (`p2_mesh_open_um` = 45). Thickness / calendering not measured (COMSOL cell: calendered, 29.7 µm at the crossings). Effective-density model; cut inside the Dynamask border, never under the frame |
 | 8.0 … 8.15 | `AmpGas` *(sensitive)* | 150 µm | **confirmed** (2026-08-05, re-confirmed 2026-10-06) |
@@ -142,7 +142,7 @@ Nothing geometric is open. Settled 2026-10-06 (second round): the frame
 sits on the 150 µm bulk Dynamask, with the mesh cut inside it → drift gas
 3.964 mm; the carbon back frame spans the board outline minus the pad zone.
 
-**Update 2026-10-15 (Alexandra):** all mylar sheets are ~50 µm — outer windows 10 → 50 µm, drift foil 120 → 50 µm; front gas 3.879 → 3.949 mm (foil still on the 4.0 mm ledge). The paragraph below is the 2026-10-06 state.
+**Update 2026-10-15 (Alexandra):** all mylar sheets are ~50 µm — outer windows 10 → 50 µm, drift foil 120 + 1 → 49 + 1 µm (Al ~0.1 µm in reality, 1 µm kept); front gas 3.879 → 3.950 mm (foil still on the 4.0 mm ledge). The paragraph below is the 2026-10-06 state.
 
 Settled 2026-10-06 (Alexandra: design files are the reference): PCB stack
 from `FABRICATION_P2`, gas frame from `DRIFT_P2_261124/FRAME_4mm/P2_Frame_V2.0.stp`
