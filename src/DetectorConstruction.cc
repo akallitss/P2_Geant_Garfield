@@ -726,10 +726,10 @@ G4VPhysicalVolume* DetectorConstruction::Construct() {
 // layers are placed at their true transverse position. z = 0 is the FRONT
 // WINDOW plane (top of the gas frame); the beam travels along +z:
 //
-//   front window: 10 um mylar, bulged (terraced dome, apex upstream) z < 0
-//   front gas gap                        z = 0 .. 3.879 mm
-//   drift cathode: one 120 um mylar foil + 1 um Al facing the drift gas,
-//     lying on the frame ledge (Alexandra 2026-10-06)
+//   front window: 50 um mylar, bulged (terraced dome, apex upstream) z < 0
+//   front gas gap                        z = 0 .. 3.949 mm
+//   drift cathode: one 50 um mylar foil + 1 um Al facing the drift gas,
+//     lying on the frame ledge (Alexandra 2026-10-15; was 120 um)
 //   drift gas   [sensitive]              3.964 mm (4 mm frame - mesh)
 //   micromesh   (woven SS 45 um opening / 18 um wire -> 36 um slab of
 //     effective-density steel; areal mass matches the woven mesh)
@@ -737,7 +737,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct() {
 //   readout PCB: F.Cu 18um / FR4 200um / B.Cu 18um   (Stack_Up_P2.txt);
 //     real F.Cu pads, B.Cu density-scaled by radial band
 //   back gas gap (= carbon back-frame depth, 1 mm), pad-zone outline
-//   back window: 10 um mylar, bulged (dome apex downstream)
+//   back window: 50 um mylar, bulged (dome apex downstream)
 //   + frame rings: front = plastic 8 mm frame (P2_Frame_V2.0.stp, two
 //     rings either side of the foil ledge) standing on the 150 um bulk
 //     Dynamask; back = 1 mm carbon frame, board outline -> pad zone.

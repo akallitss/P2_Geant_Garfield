@@ -544,9 +544,9 @@ def fig_questions(outdir):
 
     # (key, label, thickness text, height, facecolor, status)
     rows = [
-        ("fwin",  "front gas window — mylar", "10 µm",      0.95, "#63b8d8", C_OK),
-        ("fgas",  "front gas gap",            "3.88 mm",    1.20, "#dff2fa", C_MEAS),
-        ("cath",  "drift cathode — Al-mylar", "120 µm + 1 µm Al",
+        ("fwin",  "front gas window — mylar", "50 µm",      0.95, "#63b8d8", C_OK),
+        ("fgas",  "front gas gap",            "3.95 mm",    1.20, "#dff2fa", C_MEAS),
+        ("cath",  "drift cathode — Al-mylar", "50 µm + 1 µm Al",
                                                             0.60, "#a8e0a8", C_OK),
         ("drift", "DRIFT GAS",                "4 mm",       1.30, "#b3ccff", C_MEAS),
         ("mesh",  "micromesh — woven SS 45/18 µm",
@@ -556,7 +556,7 @@ def fig_questions(outdir):
         ("fr4",   "FR4 core",                 "200 µm",     0.70, "#5aa85a", C_MEAS),
         ("bcu",   "B.Cu signal lines",        "18 µm × 0.17", 0.45, "#cc6619", C_MEAS),
         ("bgas",  "back gas gap (carbon frame)", "1 mm",   1.00, "#dff2fa", C_OK),
-        ("bwin",  "back gas window — mylar",  "10 µm",      0.95, "#63b8d8", C_OK),
+        ("bwin",  "back gas window — mylar",  "50 µm",      0.95, "#63b8d8", C_OK),
     ]
 
     gap = 0.07

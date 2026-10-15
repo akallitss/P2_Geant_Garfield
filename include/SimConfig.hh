@@ -53,8 +53,8 @@ struct SimConfig {
     double p2_mesh_open_um   = 45.0;   //   opening, pitch 63 um (Alexandra 2026-10-06;
                                        //   supersedes "48x19"). Modelled as a 2*wire slab
                                        //   of effective-density steel
-    double p2_front_gap_mm   = 3.879;  // outer window -> drift foil = frame top (8.0) -
-                                       // ledge (4.0) - foil (0.121), P2_Frame_V2.0.stp
+    double p2_front_gap_mm   = 3.949;  // outer window -> drift foil = frame top (8.0) -
+                                       // ledge (4.0) - foil (0.051), P2_Frame_V2.0.stp
     double p2_cath_gap_mm    = 0.0;    // 0 = ONE drift-cathode foil (2026-10-06).
                                        // > 0 = the old two-foil model, foils this far apart
     double p2_back_gap_mm    = 1.0;    // PCB back -> back window = carbon back-frame depth.
@@ -63,10 +63,12 @@ struct SimConfig {
     double p2_bulge_front_mm = 10.0;   // overpressure sag — Hencky estimate at ~3 mbar,
     double p2_bulge_back_mm  = 10.0;   //   p in 1..10 mbar -> 7..15 mm; 10 mm both
                                        //   sides (Alexandra 2026-10-06)
-    double p2_window_um      = 10.0;   // outer containment mylar (Alexandra 2026-10-06)
+    double p2_window_um      = 50.0;   // outer containment mylar: ~50 um (Alexandra
+                                       //   2026-10-15; was 10 um from 2026-10-06)
     std::string p2_pillars   = "saclay"; // mesh-support pillar mask: "saclay" (V1,
                                        //   det1-det4), "cern" (det5), "none"
-    double p2_cath_mylar_um  = 120.0;  // drift-cathode mylar (Alexandra 2026-10-06)
+    double p2_cath_mylar_um  = 50.0;   // drift-cathode mylar: ~50 um (Alexandra
+                                       //   2026-10-15; was 120 um from 2026-10-06)
     double p2_cath_al_um     = 1.0;    // its aluminization, facing the drift gas
     double p2_fcu_coverage   = 0.983;  // Cu area fraction over the active area, measured
     double p2_bcu_coverage   = 0.174;  //   from the gerbers (B.Cu = signal lines, not a
