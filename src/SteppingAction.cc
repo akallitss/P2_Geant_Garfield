@@ -152,6 +152,8 @@ void SteppingAction::UserSteppingAction(const G4Step* step) {
 
         const G4VProcess* cproc = track->GetCreatorProcess();
         cluster.creatorProcess = cproc ? cproc->GetProcessName() : "primary";
+        const G4LogicalVolume* blv = track->GetLogicalVolumeAtVertex();
+        cluster.birthVolume = blv ? blv->GetName() : "";
 
         // Provenance: which interaction, in which layer, started this chain.
         auto oit = data.trackOrigins.find(trackID);

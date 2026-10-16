@@ -1,8 +1,8 @@
 <section id="heedg4" style="background:#FFFFFF;color:#111111;font-family:Arial, sans-serif;padding:128px;padding-top:96px;display:flex;flex-direction:column;gap:20px">
-<h2 style="font-size:56px;font-weight:600">Primary ionization · Garfield/Heed vs Geant4</h2>
+<h2 style="font-size:56px;font-weight:600">Primary ionization · Garfield/Heed vs Geant4 <span style="color:#888888">(superseded 16 Oct)</span></h2>
 <div style="display:flex;gap:40px;align-items:start">
 <img src="/_blob/0c23f9d2c49b20121a39f469cd358ee6" alt="Spectra of primary electrons per 100 MeV electron crossing: Heed and Geant4 agree in neon but Geant4's peak is higher in argon" style="width:1100px;height:690px;object-fit:contain">
 <ul style="flex:1;font-size:23px;line-height:1.35"><li><b>Neon:</b> same peak (median 14 vs 14 in Ne/iso 95/5), Geant4 low tail fatter (P(n ≤ 5) 7.8 vs 6.0 %)</li><li><b>Argon:</b> Geant4 peak 30–50 % higher (Ar/iso 95/5, 4 mm: median 37 vs 29, MPV 26 vs 17)</li><li>150 GeV μ in the SPS gases: Geant4 +10–18 %</li></ul>
 </div>
-<aside>Heed: bare gas slab, delta electrons transported, 200 000 tracks per case (scripts/garfield/heed_mip.cc). Geant4: rnd2026 full stack (window, cathode upstream), EventTree.nPrimDrift with empty events added from RunMeta. Next: Geant4 on the same bare slab to separate the upstream material from the ionization model, then PAI in the gas region if the model is the cause.</aside>
+<aside>SUPERSEDED 16 Oct: this compares the Geant4 full stack (with PIXE) to a bare Heed slab, not like-for-like. See slides heedslab / heedstack: on the same bare slab, Geant4 PAI = Heed; the argon excess here was PIXE (x1.15) and material (x1.12). Heed: bare gas slab, delta electrons transported, 200 000 tracks per case (scripts/garfield/heed_mip.cc). Geant4: rnd2026 full stack (window, cathode upstream), EventTree.nPrimDrift with empty events added from RunMeta. Next: Geant4 on the same bare slab to separate the upstream material from the ionization model, then PAI in the gas region if the model is the cause.</aside>
 </section>

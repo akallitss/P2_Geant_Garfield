@@ -40,6 +40,8 @@ private:
     void DefineMaterials();
     G4Material* GetGasMixture(const std::string& name);
     G4VPhysicalVolume* ConstructP2();
+    G4VPhysicalVolume* ConstructSlab();
+    void MakeGasPAIRegion();
 
     const SimConfig& fConfig;
     G4LogicalVolume* fDriftGasLV   = nullptr;

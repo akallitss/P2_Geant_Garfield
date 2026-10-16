@@ -6,10 +6,16 @@
 // + G4RadioactiveDecay + G4StepLimiterPhysics
 
 #include "G4VModularPhysicsList.hh"
+#include "SimConfig.hh"
 
 class PhysicsList : public G4VModularPhysicsList {
 public:
-    PhysicsList();
+    explicit PhysicsList(const SimConfig& cfg);
     ~PhysicsList() override = default;
+    void ConstructProcess() override;
     void SetCuts() override;
+
+private:
+    std::string fPAI;   // SimConfig::pai
+    bool        fPixe;  // SimConfig::pixe
 };

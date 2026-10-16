@@ -40,7 +40,8 @@ void PrintUsage() {
     std::cerr << "  -o <output>      Output file base name  (default: mm_output)\n";
     std::cerr << "  -s <seed>        Random seed  (default: time-based)\n";
     std::cerr << "  -t <nthreads>    MT threads  (default: 1)\n";
-    std::cerr << "  -m <mode>        p2 | vacuum | full | sr90 | sr90nomm | lscalib | backscintcalib\n";
+    std::cerr << "  -m <mode>        p2 | vacuum | full | sr90 | sr90nomm | lscalib | backscintcalib | slab\n";
+    std::cerr << "                   slab = bare drift-gas slab (--drift-gap) in vacuum, beam along +z\n";
     std::cerr << "                   (default: p2)\n";
     std::cerr << "P2 mode options (see docs/P2_MODEL.md for defaults' provenance):\n";
     std::cerr << "  --drift-gap <mm>    Drift gas, campaign scans 1..4  (default: 3.964 = 4 mm frame)\n";
@@ -73,6 +74,10 @@ void PrintUsage() {
     std::cerr << "  --src-dist <mm>  Source-to-detector air gap [mm] (default: 100)\n";
     std::cerr << "  -a <mm>          Al shielding [mm], vacuum mode only  (default: 0)\n";
     std::cerr << "  -c <mm>          CFRP wall thickness [mm] for LS cells, full mode only  (default: 1.5)\n";
+    std::cerr << "  --pai <route>    PAI ionisation in DriftGas+AmpGas only: config (G4EmConfigurator)\n";
+    std::cerr << "                   | params (G4EmParameters::AddPAIModel)  (default: off, option4)\n";
+    std::cerr << "  --no-pixe        Switch off PIXE (inner-shell ionisation by e+-/hadrons)\n";
+    std::cerr << "  --gas-step <um>  Max step in DriftGas/AmpGas, <= 0 = none  (default: 100)\n";
     std::cerr << "  --skip-empty     Write only events with >=1 gas cluster (photon runs;\n";
     std::cerr << "                   total thrown is still reported for normalization)\n";
     std::cerr << "  -v               Verbose output\n";
@@ -118,10 +123,20 @@ int main(int argc, char** argv) {
             else if (mode == "sr90nomm") config.mode = SimMode::kSr90NoMM;
             else if (mode == "lscalib")       config.mode = SimMode::kLSCalib;
             else if (mode == "backscintcalib") config.mode = SimMode::kBackScintCalib;
+            else if (mode == "slab")   config.mode = SimMode::kSlab;
             else { std::cerr << "Unknown mode: " << mode << "\n"; return 1; }
         }
         else if (arg == "--spectrum" && i+1<argc) config.spectrum_file  = argv[++i];
         else if (arg == "--src-dist" && i+1<argc) config.source_to_det_mm = std::stod(argv[++i]);
+        else if (arg == "--pai"         && i+1<argc) {
+            config.pai = argv[++i];
+            if (config.pai != "config" && config.pai != "params") {
+                std::cerr << "Unknown --pai route: " << config.pai << " (config | params)\n";
+                return 1;
+            }
+        }
+        else if (arg == "--no-pixe")                 config.pixe              = false;
+        else if (arg == "--gas-step"    && i+1<argc) config.gas_step_um       = std::stod(argv[++i]);
         else if (arg == "--drift-gap"   && i+1<argc) config.p2_drift_mm       = std::stod(argv[++i]);
         else if (arg == "--amp-gap"     && i+1<argc) config.p2_amp_um         = std::stod(argv[++i]);
         else if (arg == "--back-gap"    && i+1<argc) config.p2_back_gap_mm    = std::stod(argv[++i]);
@@ -183,7 +198,8 @@ int main(int argc, char** argv) {
                            config.mode == SimMode::kSr90Calibration ? "sr90-calibration"    :
                            config.mode == SimMode::kSr90NoMM        ? "sr90-no-mm"          :
                            config.mode == SimMode::kLSCalib         ? "ls-calibration"      :
-                           config.mode == SimMode::kBackScintCalib  ? "backscint-calibration": "vacuum");
+                           config.mode == SimMode::kBackScintCalib  ? "backscint-calibration":
+                           config.mode == SimMode::kSlab            ? "slab"                : "vacuum");
     std::cout << "  Mode           : " << modeStr << "\n";
     const gas::Mixture& mix = gas::Find(config.gas);
     std::cout << "  Gas            : " << config.gas << "  (" << mix.label
@@ -191,6 +207,9 @@ int main(int argc, char** argv) {
               << " eV)\n";
     if (!mix.note.empty())
         std::cout << "                   note: " << mix.note << "\n";
+    std::cout << "  Gas ionisation : " << (config.pai.empty() ? "option4" : "PAI (" + config.pai + ")")
+              << ", max step " << config.gas_step_um << " um"
+              << ", PIXE " << (config.pixe ? "on" : "off") << "\n";
     std::cout << "  Particle       : " << config.particle << "\n";
     std::cout << "  Energy         : " << config.energy/MeV << " MeV" << "\n";
     std::cout << "  Events         : " << config.nEvents << "\n";
@@ -226,7 +245,7 @@ int main(int argc, char** argv) {
     // PrimaryGeneratorAction can read GetHe3GasCenterZ() after Construct().
     auto* detCon = new DetectorConstruction(config);
     runManager->SetUserInitialization(detCon);
-    runManager->SetUserInitialization(new PhysicsList());
+    runManager->SetUserInitialization(new PhysicsList(config));
     runManager->SetUserInitialization(new ActionInitialization(config, detCon));
 
     runManager->Initialize();

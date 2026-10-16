@@ -55,6 +55,7 @@ struct IonizationCluster {
     int         ancestorID   = 0;
     double      parentEnergy = 0.0;  // converting neutral's creation KE [MeV]
     std::string parentBirthVolume;
+    std::string birthVolume;         // logical volume where THIS track was born
     double      globalTime = 0.0;    // [ns]
 };
 

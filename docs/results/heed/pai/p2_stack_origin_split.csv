@@ -1,0 +1,206 @@
+case,origin,primaries_per_event
+np_p2_ArIso_opt4_st0,beam particle,35.79
+np_p2_ArIso_opt4_st0,born in gas,5.89
+np_p2_ArIso_opt4_st0,born in DriftCathode_Mylar,1.06
+np_p2_ArIso_opt4_st0,born in Micromesh,0.57
+np_p2_ArIso_opt4_st0,born in DriftCathode_Al,0.43
+np_p2_ArIso_opt4_st0,born in FrontWindow_Mylar5,0.34
+np_p2_ArIso_opt4_st0,born in PCB_Cu_F_Pad20,0.13
+np_p2_ArIso_opt4_st0,born in World,0.13
+np_p2_ArIso_opt4_st0,born in PCB_Cu_F_Pad19,0.09
+np_p2_ArIso_opt4_st0,born in Pillar,0.08
+np_p2_ArIso_opt4_st0,born in PCB_FR4,0.07
+np_p2_ArIso_opt4_st0,born in FrontWindow_Gas2,0.07
+np_p2_ArIso_opt4_st0,born in FrontGas,0.05
+np_p2_ArIso_opt4_st0,born in PCB_Cu_F_Pad21,0.03
+np_p2_ArIso_opt4_st0,born in FrontWindow_Gas1,0.01
+np_p2_ArIso_opt4_st0,born in FrontWindow_Gas3,0.01
+np_p2_ArIso_opt4_st0,total per event,44.74
+np_p2_ArIso_opt4_st100,beam particle,35.51
+np_p2_ArIso_opt4_st100,born in gas,6.47
+np_p2_ArIso_opt4_st100,born in DriftCathode_Mylar,1.62
+np_p2_ArIso_opt4_st100,born in Micromesh,1.23
+np_p2_ArIso_opt4_st100,born in DriftCathode_Al,0.46
+np_p2_ArIso_opt4_st100,born in FrontWindow_Mylar5,0.22
+np_p2_ArIso_opt4_st100,born in World,0.15
+np_p2_ArIso_opt4_st100,born in PCB_Cu_F_Pad19,0.13
+np_p2_ArIso_opt4_st100,born in FrontWindow_Gas2,0.1
+np_p2_ArIso_opt4_st100,born in FrontWindow_Gas1,0.08
+np_p2_ArIso_opt4_st100,born in PCB_Cu_F_Pad20,0.07
+np_p2_ArIso_opt4_st100,born in FrontWindow_Gas0,0.05
+np_p2_ArIso_opt4_st100,born in PCB_FR4,0.02
+np_p2_ArIso_opt4_st100,born in FrontGas,0.02
+np_p2_ArIso_opt4_st100,born in PCB_Cu_F_Pad21,0.01
+np_p2_ArIso_opt4_st100,born in PCB_Cu_B_Band5,0.0
+np_p2_ArIso_opt4_st100,born in FrontWindow_Gas4,0.0
+np_p2_ArIso_opt4_st100,total per event,46.15
+np_p2_ArIso_pai_st0,beam particle,30.92
+np_p2_ArIso_pai_st0,born in gas,9.97
+np_p2_ArIso_pai_st0,born in DriftCathode_Mylar,1.06
+np_p2_ArIso_pai_st0,born in Micromesh,1.04
+np_p2_ArIso_pai_st0,born in FrontWindow_Mylar5,0.46
+np_p2_ArIso_pai_st0,born in DriftCathode_Al,0.32
+np_p2_ArIso_pai_st0,born in PCB_Cu_F_Pad20,0.17
+np_p2_ArIso_pai_st0,born in World,0.16
+np_p2_ArIso_pai_st0,born in PCB_Cu_F_Pad19,0.13
+np_p2_ArIso_pai_st0,born in FrontGas,0.06
+np_p2_ArIso_pai_st0,born in FrontWindow_Gas2,0.03
+np_p2_ArIso_pai_st0,born in PCB_FR4,0.02
+np_p2_ArIso_pai_st0,born in FrontWindow_Gas3,0.02
+np_p2_ArIso_pai_st0,born in PCB_Cu_F_Pad21,0.02
+np_p2_ArIso_pai_st0,born in PCB_Cu_F_Pad26,0.01
+np_p2_ArIso_pai_st0,born in FrontWindow_Gas1,0.0
+np_p2_ArIso_pai_st0,total per event,44.37
+np_p2_ArIso_pai_st100,beam particle,30.92
+np_p2_ArIso_pai_st100,born in gas,9.92
+np_p2_ArIso_pai_st100,born in DriftCathode_Mylar,1.97
+np_p2_ArIso_pai_st100,born in Micromesh,1.39
+np_p2_ArIso_pai_st100,born in DriftCathode_Al,0.44
+np_p2_ArIso_pai_st100,born in FrontWindow_Mylar5,0.27
+np_p2_ArIso_pai_st100,born in World,0.15
+np_p2_ArIso_pai_st100,born in PCB_Cu_F_Pad20,0.08
+np_p2_ArIso_pai_st100,born in PCB_FR4,0.05
+np_p2_ArIso_pai_st100,born in FrontWindow_Gas1,0.03
+np_p2_ArIso_pai_st100,born in FrontGas,0.02
+np_p2_ArIso_pai_st100,born in Pillar,0.01
+np_p2_ArIso_pai_st100,born in PCB_Cu_F_Pad19,0.01
+np_p2_ArIso_pai_st100,born in FrontWindow_Gas2,0.01
+np_p2_ArIso_pai_st100,born in FrontWindow_Gas3,0.01
+np_p2_ArIso_pai_st100,total per event,45.27
+np_slab_ArCF4Iso_4mm_opt4_st0,beam particle,37.22
+np_slab_ArCF4Iso_4mm_opt4_st0,born in gas,6.1
+np_slab_ArCF4Iso_4mm_opt4_st0,total per event,43.32
+np_slab_ArCF4Iso_4mm_pai_st0,beam particle,32.65
+np_slab_ArCF4Iso_4mm_pai_st0,born in gas,9.53
+np_slab_ArCF4Iso_4mm_pai_st0,total per event,42.19
+np_slab_ArIso_30mm_opt4_st0,beam particle,268.12
+np_slab_ArIso_30mm_opt4_st0,born in gas,59.11
+np_slab_ArIso_30mm_opt4_st0,total per event,327.22
+np_slab_ArIso_30mm_pai_st0,beam particle,232.8
+np_slab_ArIso_30mm_pai_st0,born in gas,85.35
+np_slab_ArIso_30mm_pai_st0,total per event,318.15
+np_slab_ArIso_4mm_mu_opt4_st0,beam particle,37.6
+np_slab_ArIso_4mm_mu_opt4_st0,born in gas,5.63
+np_slab_ArIso_4mm_mu_opt4_st0,total per event,43.23
+np_slab_ArIso_4mm_opt4_st0,beam particle,35.43
+np_slab_ArIso_4mm_opt4_st0,born in gas,5.74
+np_slab_ArIso_4mm_opt4_st0,total per event,41.16
+np_slab_ArIso_4mm_opt4_st100,beam particle,35.32
+np_slab_ArIso_4mm_opt4_st100,born in gas,5.65
+np_slab_ArIso_4mm_opt4_st100,total per event,40.97
+np_slab_ArIso_4mm_pai_st0,beam particle,30.85
+np_slab_ArIso_4mm_pai_st0,born in gas,8.78
+np_slab_ArIso_4mm_pai_st0,total per event,39.63
+np_slab_NeIso_4mm_opt4_st0,beam particle,16.71
+np_slab_NeIso_4mm_opt4_st0,born in gas,2.29
+np_slab_NeIso_4mm_opt4_st0,total per event,19.0
+np_slab_NeIso_4mm_pai_st0,beam particle,14.96
+np_slab_NeIso_4mm_pai_st0,born in gas,3.99
+np_slab_NeIso_4mm_pai_st0,total per event,18.95
+p2_ArIso_opt4_st0,beam particle,32.25
+p2_ArIso_opt4_st0,born in gas,13.79
+p2_ArIso_opt4_st0,born in DriftCathode_Mylar,1.15
+p2_ArIso_opt4_st0,born in Micromesh,1.04
+p2_ArIso_opt4_st0,born in DriftCathode_Al,0.46
+p2_ArIso_opt4_st0,born in FrontWindow_Mylar5,0.37
+p2_ArIso_opt4_st0,born in World,0.27
+p2_ArIso_opt4_st0,born in PCB_FR4,0.11
+p2_ArIso_opt4_st0,born in FrontWindow_Gas1,0.1
+p2_ArIso_opt4_st0,born in FrontWindow_Gas0,0.09
+p2_ArIso_opt4_st0,born in PCB_Cu_F_Pad20,0.08
+p2_ArIso_opt4_st0,born in FrontWindow_Gas2,0.04
+p2_ArIso_opt4_st0,born in PCB_Cu_F_Pad19,0.03
+p2_ArIso_opt4_st0,born in Pillar,0.03
+p2_ArIso_opt4_st0,born in PCB_Cu_F_Pad21,0.01
+p2_ArIso_opt4_st0,born in FrontGas,0.01
+p2_ArIso_opt4_st0,born in FrontWindow_Gas3,0.0
+p2_ArIso_opt4_st0,total per event,49.83
+p2_ArIso_opt4_st100,beam particle,34.5
+p2_ArIso_opt4_st100,born in gas,14.35
+p2_ArIso_opt4_st100,born in DriftCathode_Mylar,1.67
+p2_ArIso_opt4_st100,born in Micromesh,1.11
+p2_ArIso_opt4_st100,born in DriftCathode_Al,0.52
+p2_ArIso_opt4_st100,born in FrontWindow_Mylar5,0.32
+p2_ArIso_opt4_st100,born in Pillar,0.1
+p2_ArIso_opt4_st100,born in FrontWindow_Gas0,0.09
+p2_ArIso_opt4_st100,born in FrontGas,0.08
+p2_ArIso_opt4_st100,born in World,0.07
+p2_ArIso_opt4_st100,born in FrontWindow_Gas4,0.04
+p2_ArIso_opt4_st100,born in PCB_Cu_F_Pad20,0.04
+p2_ArIso_opt4_st100,born in PCB_FR4,0.02
+p2_ArIso_opt4_st100,born in PCB_Cu_F_Pad21,0.01
+p2_ArIso_opt4_st100,born in FrontWindow_Gas1,0.01
+p2_ArIso_opt4_st100,born in FrontWindow_Gas2,0.01
+p2_ArIso_opt4_st100,born in FrontWindow_Gas3,0.01
+p2_ArIso_opt4_st100,born in PCB_Cu_F_Pad19,0.01
+p2_ArIso_opt4_st100,total per event,52.95
+p2_ArIso_pai_st0,beam particle,27.54
+p2_ArIso_pai_st0,born in gas,18.32
+p2_ArIso_pai_st0,born in DriftCathode_Mylar,1.59
+p2_ArIso_pai_st0,born in Micromesh,1.09
+p2_ArIso_pai_st0,born in DriftCathode_Al,0.36
+p2_ArIso_pai_st0,born in FrontWindow_Mylar5,0.25
+p2_ArIso_pai_st0,born in FrontWindow_Gas0,0.11
+p2_ArIso_pai_st0,born in World,0.1
+p2_ArIso_pai_st0,born in FrontWindow_Gas2,0.08
+p2_ArIso_pai_st0,born in PCB_Cu_F_Pad20,0.07
+p2_ArIso_pai_st0,born in Pillar,0.03
+p2_ArIso_pai_st0,born in FrontWindow_Gas4,0.03
+p2_ArIso_pai_st0,born in PCB_FR4,0.03
+p2_ArIso_pai_st0,born in PCB_Cu_F_Pad19,0.02
+p2_ArIso_pai_st0,born in FrontWindow_Gas3,0.01
+p2_ArIso_pai_st0,born in FrontGas,0.01
+p2_ArIso_pai_st0,born in PCB_Cu_F_Pad21,0.0
+p2_ArIso_pai_st0,total per event,49.64
+p2_ArIso_pai_st100,beam particle,30.39
+p2_ArIso_pai_st100,born in gas,18.76
+p2_ArIso_pai_st100,born in DriftCathode_Mylar,1.25
+p2_ArIso_pai_st100,born in Micromesh,0.76
+p2_ArIso_pai_st100,born in FrontWindow_Mylar5,0.45
+p2_ArIso_pai_st100,born in DriftCathode_Al,0.37
+p2_ArIso_pai_st100,born in PCB_FR4,0.11
+p2_ArIso_pai_st100,born in FrontWindow_Gas0,0.07
+p2_ArIso_pai_st100,born in World,0.07
+p2_ArIso_pai_st100,born in PCB_Cu_F_Pad20,0.06
+p2_ArIso_pai_st100,born in PCB_Cu_F_Pad21,0.04
+p2_ArIso_pai_st100,born in FrontGas,0.03
+p2_ArIso_pai_st100,born in FrontWindow_Gas3,0.02
+p2_ArIso_pai_st100,born in PCB_Cu_F_Pad19,0.02
+p2_ArIso_pai_st100,born in Pillar,0.01
+p2_ArIso_pai_st100,total per event,52.4
+slab_ArCF4Iso_4mm_opt4_st0,beam particle,34.12
+slab_ArCF4Iso_4mm_opt4_st0,born in gas,12.52
+slab_ArCF4Iso_4mm_opt4_st0,total per event,46.63
+slab_ArCF4Iso_4mm_pai_st0,beam particle,29.6
+slab_ArCF4Iso_4mm_pai_st0,born in gas,16.03
+slab_ArCF4Iso_4mm_pai_st0,total per event,45.63
+slab_ArIso_30mm_opt4_st0,beam particle,224.74
+slab_ArIso_30mm_opt4_st0,born in gas,110.67
+slab_ArIso_30mm_opt4_st0,total per event,335.41
+slab_ArIso_30mm_pai_st0,beam particle,190.23
+slab_ArIso_30mm_pai_st0,born in gas,136.91
+slab_ArIso_30mm_pai_st0,total per event,327.14
+slab_ArIso_4mm_mu_opt4_st0,beam particle,37.63
+slab_ArIso_4mm_mu_opt4_st0,born in gas,5.8
+slab_ArIso_4mm_mu_opt4_st0,total per event,43.43
+slab_ArIso_4mm_mu_pai_st0,beam particle,32.75
+slab_ArIso_4mm_mu_pai_st0,born in gas,9.93
+slab_ArIso_4mm_mu_pai_st0,total per event,42.68
+slab_ArIso_4mm_opt4_st0,beam particle,32.29
+slab_ArIso_4mm_opt4_st0,born in gas,12.35
+slab_ArIso_4mm_opt4_st0,total per event,44.64
+slab_ArIso_4mm_opt4_st100,beam particle,34.9
+slab_ArIso_4mm_opt4_st100,born in gas,12.29
+slab_ArIso_4mm_opt4_st100,total per event,47.19
+slab_ArIso_4mm_pai_st0,beam particle,27.72
+slab_ArIso_4mm_pai_st0,born in gas,15.38
+slab_ArIso_4mm_pai_st0,total per event,43.11
+slab_ArIso_4mm_pai_st100,beam particle,30.32
+slab_ArIso_4mm_pai_st100,born in gas,15.78
+slab_ArIso_4mm_pai_st100,total per event,46.1
+slab_NeIso_4mm_opt4_st0,beam particle,16.38
+slab_NeIso_4mm_opt4_st0,born in gas,3.42
+slab_NeIso_4mm_opt4_st0,total per event,19.8
+slab_NeIso_4mm_pai_st0,beam particle,14.62
+slab_NeIso_4mm_pai_st0,born in gas,5.06
+slab_NeIso_4mm_pai_st0,total per event,19.68

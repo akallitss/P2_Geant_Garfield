@@ -1,0 +1,12 @@
+<section id="heedstack" style="background:#FFFFFF;color:#111111;font-family:Arial, sans-serif;padding:128px;padding-top:96px;display:flex;flex-direction:column;gap:20px">
+<h2 style="font-size:56px;font-weight:600">What the material adds, and what our old 1.35 was</h2>
+<div style="display:flex;gap:40px;align-items:start">
+<img src="/_blob/66ef300c7d620d73452c2bee75b7ec96" alt="Same physics, PAI and PIXE off: Heed bare slab 39.9 / 29, Geant4 bare slab 39.6 / 29, Geant4 full P2 stack 44.4 / 30; the bulk of the spectra coincide" style="width:960px;height:600px;object-fit:contain">
+<div style="flex:1;display:flex;flex-direction:column;gap:20px">
+<p style="font-size:24px;line-height:1.35">Full stack / bare slab, same physics: <b>×1.12 mean, ×1.03 median</b>; the bulk is unchanged, the extra is in the tail. Born in the solids: cathode mylar 1.1, mesh 1.0, window 0.5, Al 0.3, pads 0.3 e⁻/event</p>
+<table style="font-size:24px;color:#111111"><tr><th style="width:70%">Old 1.35 (production vs Heed)</th><th style="width:30%">mean</th></tr><tr><td>PIXE (with 100 µm step)</td><td>×1.15</td></tr><tr><td>Material around the gas</td><td>×1.12</td></tr><tr><td>Step limit, PIXE off</td><td>×1.03</td></tr><tr><td>Urban vs PAI, PAI vs Heed</td><td>×1.00</td></tr></table>
+<p style="font-size:24px;line-height:1.35"><b>To decide:</b> production with PIXE off and PAI in the gas, then rerun rnd2026 (e⁻ primaries −15 %, P(n ≤ 10) 1.6 → 3.4 %)</p>
+</div>
+</div>
+<aside>Full P2 stack (50 um mylar), Ar/iso, 100 MeV e- at 0 deg, beam spread 11.43 mm, 10k events; PAI in region P2GasPAI (DriftGas + AmpGas only, own 1 um cuts), solids keep option4 in P2FineCut. Ratio errors from bootstrap: stack/slab 1.119 +- 0.019; production/Heed 1.328 +- 0.020. Origin from the new ClusterTree.birthVolume. The material part is Geant4 only: Heed has no material, so only data can test it (SPS MIP spectrum, validation step 3; or runs with and without the cathode foil). Dylan's claim of x1.30 from material is not confirmed for P2. No 1e5-step tracks, no slowdown with PAI. Current production (incl. rnd2026_mylar50) still has PIXE on: defaults not changed yet.</aside>
+</section>

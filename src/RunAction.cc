@@ -78,7 +78,7 @@ struct RunAction::Impl {
     Char_t   cb_particle[32];
     // ClusterTree — provenance (added 2026-08-05)
     Char_t   cb_creatorProc[32], cb_originProc[32], cb_originVol[32],
-             cb_parentVol[32];
+             cb_parentVol[32], cb_birthVol[32];
     Double_t cb_originX, cb_originY, cb_originZ, cb_originE,
              cb_parentE, cb_time;
     Int_t    cb_ancestorID;
@@ -129,7 +129,8 @@ void RunAction::BeginOfRunAction(const G4Run*) {
                            fConfig.mode == SimMode::kSr90Calibration ? "sr90"         :
                            fConfig.mode == SimMode::kSr90NoMM        ? "sr90nomm"     :
                            fConfig.mode == SimMode::kLSCalib         ? "lscalib"      :
-                           fConfig.mode == SimMode::kBackScintCalib  ? "backscintcalib": "vacuum");
+                           fConfig.mode == SimMode::kBackScintCalib  ? "backscintcalib":
+                           fConfig.mode == SimMode::kSlab            ? "slab"         : "vacuum");
     std::string tag = "mode=" + modeStr
                     + "_gas=" + fConfig.gas
                     + "_particle=" + fConfig.particle
@@ -249,6 +250,10 @@ void RunAction::BeginOfRunAction(const G4Run*) {
                             "originVolume[32]/C");
     fImpl->clusTree->Branch("parentBirthVolume", fImpl->cb_parentVol,
                             "parentBirthVolume[32]/C");
+    // Logical volume where THIS track was born (2026-10-16): separates
+    // deltas made in the gas from ones knocked out of the cathode/mesh/pads.
+    fImpl->clusTree->Branch("birthVolume", fImpl->cb_birthVol,
+                            "birthVolume[32]/C");
     fImpl->clusTree->Branch("originX",      &fImpl->cb_originX);
     fImpl->clusTree->Branch("originY",      &fImpl->cb_originY);
     fImpl->clusTree->Branch("originZ",      &fImpl->cb_originZ);
@@ -305,7 +310,7 @@ void RunAction::BeginOfRunAction(const G4Run*) {
                        "edep_eV,nPrimary,ke_MeV,volume,particle,time_ns,"
                        "creatorProcess,originProcess,originVolume,"
                        "parentBirthVolume,originX_mm,originY_mm,originZ_mm,"
-                       "originEnergy_MeV,parentEnergy_MeV,ancestorID\n";
+                       "originEnergy_MeV,parentEnergy_MeV,ancestorID,birthVolume\n";
 
     fImpl->volFile.open(ss.str() + "_volumes.csv");
     fImpl->volFile << "eventID,volume,edep_eV,nSteps\n";
@@ -343,7 +348,8 @@ void RunAction::EndOfRunAction(const G4Run* run) {
                                fConfig.mode == SimMode::kSr90Calibration ? "sr90-calibration"    :
                                fConfig.mode == SimMode::kSr90NoMM        ? "sr90-no-mm"          :
                                fConfig.mode == SimMode::kLSCalib         ? "ls-calibration"      :
-                               fConfig.mode == SimMode::kBackScintCalib  ? "backscint-calibration": "vacuum");
+                               fConfig.mode == SimMode::kBackScintCalib  ? "backscint-calibration":
+                               fConfig.mode == SimMode::kSlab            ? "slab"                : "vacuum");
         G4cout << "\n========= Run Summary =========" << G4endl;
         G4cout << "  Mode   : " << modeStr         << G4endl;
         G4cout << "  Gas    : " << fConfig.gas      << G4endl;
@@ -399,7 +405,8 @@ void RunAction::WriteRunMeta() {
          fConfig.mode == SimMode::kSr90Calibration ? "sr90"          :
          fConfig.mode == SimMode::kSr90NoMM        ? "sr90nomm"      :
          fConfig.mode == SimMode::kLSCalib         ? "lscalib"       :
-         fConfig.mode == SimMode::kBackScintCalib  ? "backscintcalib": "vacuum");
+         fConfig.mode == SimMode::kBackScintCalib  ? "backscintcalib":
+                           fConfig.mode == SimMode::kSlab            ? "slab"         : "vacuum");
 
     put(gitHash,   sizeof(gitHash),   meta::GitHash());
     put(geoHash,   sizeof(geoHash),   meta::GeometryHash(fConfig));
@@ -633,6 +640,7 @@ void RunAction::RecordEvent(const EventData& data) {
             setStr(fImpl->cb_originProc,  32, c.originProcess);
             setStr(fImpl->cb_originVol,   32, c.originVolume);
             setStr(fImpl->cb_parentVol,   32, c.parentBirthVolume);
+            setStr(fImpl->cb_birthVol,    32, c.birthVolume);
             fImpl->cb_originX    = c.originX;
             fImpl->cb_originY    = c.originY;
             fImpl->cb_originZ    = c.originZ;
@@ -736,7 +744,7 @@ void RunAction::RecordEvent(const EventData& data) {
                             << c.originVolume << "," << c.parentBirthVolume << ","
                             << c.originX << "," << c.originY << "," << c.originZ << ","
                             << c.originEnergy << "," << c.parentEnergy << ","
-                            << c.ancestorID << "\n";
+                            << c.ancestorID << "," << c.birthVolume << "\n";
         }
     };
     writeClusters(data.driftClusters);

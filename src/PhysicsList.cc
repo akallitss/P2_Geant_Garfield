@@ -27,8 +27,13 @@
 #include "G4Gamma.hh"
 #include "G4Electron.hh"
 #include "G4Positron.hh"
+#include "G4LossTableManager.hh"
+#include "G4EmConfigurator.hh"
+#include "G4PAIModel.hh"
+#include "G4ParticleTable.hh"
 
-PhysicsList::PhysicsList() : G4VModularPhysicsList() {
+PhysicsList::PhysicsList(const SimConfig& cfg)
+    : G4VModularPhysicsList(), fPAI(cfg.pai), fPixe(cfg.pixe) {
     SetVerboseLevel(0);
 
     // EM physics: option4 uses Livermore models below 100 keV for e-/gamma
@@ -73,8 +78,37 @@ PhysicsList::PhysicsList() : G4VModularPhysicsList() {
     auto* emp = G4EmParameters::Instance();
     emp->SetFluo(true);
     emp->SetAuger(true);
-    emp->SetPixe(true);
+    emp->SetPixe(fPixe);
     emp->SetDeexcitationIgnoreCut(true);
+
+    // The documented route to PAI. In Geant4 11.3 it does nothing with
+    // option4 (G4EmModelActivator skips processes whose isIonisation flag is
+    // not yet set); kept as --pai params to test it on our 11.2.
+    if (fPAI == "params") {
+        for (const char* p : {"e-", "e+", "mu-", "mu+", "proton", "pi+", "pi-"})
+            emp->AddPAIModel(p, "P2GasPAI", "pai");
+    }
+}
+
+// ── PAI in the gas only (--pai config) ──────────────────────────────────
+// Option4's ionisation uses the Urban fluctuation model, which puts the most
+// probable energy loss in a 4 mm Ar layer far above Heed's (Dylan's MX17
+// check, 2026-10-15). G4PAIModel is built from the gas photo-absorption
+// cross section, as Heed is. It replaces the ionisation model of charged
+// particles in the region P2GasPAI (DriftGas + AmpGas) only; the solids keep
+// option4. Done here, after the processes exist, as in Geant4 TestEm8.
+void PhysicsList::ConstructProcess() {
+    G4VModularPhysicsList::ConstructProcess();
+    if (fPAI != "config") return;
+    auto* conf = G4LossTableManager::Instance()->EmConfigurator();
+    const std::pair<const char*, const char*> procs[] = {
+        {"e-", "eIoni"}, {"e+", "eIoni"}, {"mu-", "muIoni"}, {"mu+", "muIoni"},
+        {"proton", "hIoni"}, {"pi+", "hIoni"}, {"pi-", "hIoni"}};
+    for (const auto& [name, proc] : procs) {
+        auto* p = G4ParticleTable::GetParticleTable()->FindParticle(name);
+        auto* pai = new G4PAIModel(p, "PAIModel");
+        conf->SetExtraEmModel(name, proc, pai, "P2GasPAI", 0.0, 100.0 * TeV, pai);
+    }
 }
 
 void PhysicsList::SetCuts() {
@@ -95,6 +129,18 @@ void PhysicsList::SetCuts() {
     // well below the global one. The region is built in
     // DetectorConstruction::ConstructP2(); absent (other modes) we skip.
     if (auto* reg = G4RegionStore::GetInstance()->GetRegion("P2FineCut", false)) {
+        auto* cuts = new G4ProductionCuts();
+        cuts->SetProductionCut(1.0 * um, G4Gamma::Gamma());
+        cuts->SetProductionCut(1.0 * um, G4Electron::Electron());
+        cuts->SetProductionCut(1.0 * um, G4Positron::Positron());
+        reg->SetProductionCuts(cuts);
+    }
+
+    // The PAI gas region needs a cuts object of its own: G4EmModelManager
+    // assigns couples to regions by G4ProductionCuts POINTER, so a region
+    // left on the default cuts would capture every couple in the world and
+    // put PAI in all the solids too. Same 1 um as P2FineCut.
+    if (auto* reg = G4RegionStore::GetInstance()->GetRegion("P2GasPAI", false)) {
         auto* cuts = new G4ProductionCuts();
         cuts->SetProductionCut(1.0 * um, G4Gamma::Gamma());
         cuts->SetProductionCut(1.0 * um, G4Electron::Electron());

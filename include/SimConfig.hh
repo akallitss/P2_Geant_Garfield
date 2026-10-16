@@ -13,6 +13,7 @@ enum class SimMode {
     kSr90NoMM,
     kLSCalib,          // source → air → 1 LS layer
     kBackScintCalib,   // source → air → 1 back plastic scint bar
+    kSlab,             // bare drift-gas slab in vacuum (Heed comparison)
 };
 
 struct SimConfig {
@@ -38,6 +39,21 @@ struct SimConfig {
     // bracketed as run points (SIM_CAMPAIGN_PLAN P0.2). <= 0 keeps the table
     // default. Only affects mixtures containing CF4.
     double      w_cf4_eV = -1.0;
+
+    // ── Ionisation model in the gas (Heed vs Geant4 check, 2026-10-16) ────
+    // "" = option4 everywhere (default). "config" = G4PAIModel for e+-, mu+-,
+    // p, pi+- in the region P2GasPAI (DriftGas + AmpGas only), via
+    // G4EmConfigurator. "params" = the same through
+    // G4EmParameters::AddPAIModel (a silent no-op in Geant4 11.3, kept to test
+    // it on our 11.2). The region gets its own G4ProductionCuts object: a
+    // region sharing the default cuts pointer captures every couple in the
+    // world (G4EmModelManager::Initialise matches regions by cuts pointer).
+    std::string pai;
+    // PIXE (inner-shell ionisation by charged particles -> Auger/fluo).
+    // Geant4 has e+- and hadron PIXE cross sections but none for muons.
+    bool        pixe = true;
+    // Maximum step in DriftGas/AmpGas [um]; <= 0 = no step limit.
+    double      gas_step_um = 100.0;
 
     // ── P2 wedge mode ─────────────────────────────────────────────────────
     // Values marked GUESS are not backed by design data — see docs/P2_MODEL.md

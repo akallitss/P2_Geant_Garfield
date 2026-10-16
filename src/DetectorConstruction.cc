@@ -6,6 +6,8 @@
 //  kSr90Calibration : Sr-90 source in air → MM → PCB → air → scint wall → air → LS stack.
 //  kSr90NoMM        : Sr-90 source in air → scint wall → air → LS stack (no MM/PCB).
 //  kLSCalib         : Sr-90 source capsule → air → 1 LS layer → air → back scint bar.
+//  kSlab            : bare drift-gas slab (10 x 10 cm, --drift-gap thick) in vacuum,
+//                     the Geant4 twin of scripts/garfield/heed_mip.cc.
 //
 // Geometry updated to match Full_Geant (4-arm X17 sim):
 //  - He-3 target: r=1.5 cm, L=8 cm (was r=2.5 cm, L=15 cm)
@@ -237,6 +239,8 @@ G4VPhysicalVolume* DetectorConstruction::Construct() {
 
     if (fConfig.mode == SimMode::kP2Wedge)
         return ConstructP2();
+    if (fConfig.mode == SimMode::kSlab)
+        return ConstructSlab();
 
     G4NistManager* nist = G4NistManager::Instance();
     G4Material* matAir     = nist->FindOrBuildMaterial("G4_AIR");
@@ -1188,10 +1192,13 @@ G4VPhysicalVolume* DetectorConstruction::ConstructP2() {
         for (const char* n : {"DriftGas", "AmpGas", "Micromesh",
                               "PCB_Cu_F_Gap", "DriftCathode_Al",
                               "DriftCathode_Mylar", "DriftCathode_Mylar2"}) {
+            const bool gasVol = std::string(n) == "DriftGas" || std::string(n) == "AmpGas";
+            if (gasVol && !fConfig.pai.empty()) continue;   // -> P2GasPAI below
             if (auto* lv = G4LogicalVolumeStore::GetInstance()->GetVolume(n, false))
                 fine->AddRootLogicalVolume(lv);
         }
     }
+    MakeGasPAIRegion();
 
     G4cout << "\n=== P2 wedge geometry ===" << G4endl;
     G4cout << "  Gas: " << fConfig.gas
@@ -1232,18 +1239,58 @@ G4VPhysicalVolume* DetectorConstruction::ConstructP2() {
 }
 
 // ============================================================
+// Bare gas slab: the Geant4 twin of scripts/garfield/heed_mip.cc (gas
+// 0 < z < gap, x and y within +-5 cm, nothing else). The gun sits at
+// z = -10 cm in vacuum and fires along +z.
+G4VPhysicalVolume* DetectorConstruction::ConstructSlab() {
+    G4Material* vac    = G4NistManager::Instance()->FindOrBuildMaterial("G4_Galactic");
+    G4Material* matGas = GetGasMixture(fConfig.gas);
+    const G4double gap = fConfig.p2_drift_mm * mm;
+    const G4double halfZ = 12.0 * cm + gap;
+
+    auto* worldLV = new G4LogicalVolume(new G4Box("World", 6*cm, 6*cm, halfZ), vac, "World");
+    worldLV->SetVisAttributes(G4VisAttributes::GetInvisible());
+    auto* worldPV = new G4PVPlacement(nullptr, G4ThreeVector(), worldLV, "World",
+                                      nullptr, false, 0, true);
+    fDriftGasLV = new G4LogicalVolume(new G4Box("DriftGas", 5*cm, 5*cm, gap/2),
+                                      matGas, "DriftGas");
+    new G4PVPlacement(nullptr, G4ThreeVector(0, 0, gap/2), fDriftGasLV, "DriftGas",
+                      worldLV, false, 0, true);
+    MakeGasPAIRegion();
+
+    G4cout << "\n=== Slab geometry ===" << G4endl;
+    G4cout << "  Gas: " << fConfig.gas
+           << "  (rho=" << matGas->GetDensity()/(mg/cm3) << " mg/cm3), "
+           << gap/mm << " mm, in vacuum" << G4endl;
+    return worldPV;
+}
+
+// ============================================================
+// --pai: DriftGas and AmpGas form the region P2GasPAI, which carries the PAI
+// model (PhysicsList::ConstructProcess) and its OWN production-cuts object
+// (PhysicsList::SetCuts). Solids stay in P2FineCut with option4.
+void DetectorConstruction::MakeGasPAIRegion() {
+    if (fConfig.pai.empty()) return;
+    auto* reg = new G4Region("P2GasPAI");
+    if (fDriftGasLV) reg->AddRootLogicalVolume(fDriftGasLV);
+    if (fAmpGasLV)   reg->AddRootLogicalVolume(fAmpGasLV);
+}
+
+// ============================================================
 void DetectorConstruction::ConstructSDandField() {
     if (fDriftGasLV) {
         auto* sd = new SensitiveDetector("DriftGasSD", "DriftGasHits", "DriftGas", fConfig);
         G4SDManager::GetSDMpointer()->AddNewDetector(sd);
         SetSensitiveDetector(fDriftGasLV, sd);
-        fDriftGasLV->SetUserLimits(new G4UserLimits(100*um));
+        if (fConfig.gas_step_um > 0)
+            fDriftGasLV->SetUserLimits(new G4UserLimits(fConfig.gas_step_um*um));
     }
     if (fAmpGasLV) {
         auto* sd = new SensitiveDetector("AmpGasSD", "AmpGasHits", "AmpGas", fConfig);
         G4SDManager::GetSDMpointer()->AddNewDetector(sd);
         SetSensitiveDetector(fAmpGasLV, sd);
-        fAmpGasLV->SetUserLimits(new G4UserLimits(100*um));
+        if (fConfig.gas_step_um > 0)
+            fAmpGasLV->SetUserLimits(new G4UserLimits(fConfig.gas_step_um*um));
     }
     if (fHe3GasLV) {
         fHe3GasLV->SetUserLimits(new G4UserLimits(1.0*mm));
