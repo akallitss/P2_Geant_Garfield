@@ -30,7 +30,8 @@ Usage:
     python3 scripts/submit_condor_p2.py --dry-run
     python3 scripts/submit_condor_p2.py --scan photon --outdir /eos/user/d/dneff/p2
     python3 scripts/submit_condor_p2.py --scan angle --gases ArIso NeIso9010
-    python3 scripts/submit_condor_p2.py --scan rnd2026 --outdir /eos/user/a/akallits/p2_sim/rnd2026
+    python3 scripts/submit_condor_p2.py --scan rnd2026 --outdir /eos/user/a/akallits/p2_sim/rnd2026_heed
+        (--physics heed is the default since 2026-10-16; --physics legacy = old)
 """
 
 import argparse
@@ -106,6 +107,17 @@ RING_PITCH_MM = 11.4290
 
 JOB_FLAVOUR = "workday"          # 8 h; espresso=20min, longlunch=2h
 
+# Physics presets passed to every mm_sim job (--physics).
+#   legacy: option4 everywhere, PIXE on (all batches up to rnd2026_mylar50).
+#   heed  : drift-gas ionization from Garfield++/Heed (validated against Heed
+#           standalone, docs/results/heed/coupling), PIXE off (it double
+#           counts with option4's Penelope e- ionisation, +8-15 % primaries;
+#           docs/results/heed/pai), PAI for the soft tracks Heed does not take.
+PHYSICS = {
+    "legacy": "",
+    "heed":   "--heed --no-pixe --pai config",
+}
+
 
 # ============================================================
 def parse_args():
@@ -138,6 +150,9 @@ def parse_args():
     p.add_argument("--dry-run", action="store_true",
                    help="Write the submit file and manifest, do not condor_submit")
     p.add_argument("--seed", type=int, default=42)
+    p.add_argument("--physics", choices=sorted(PHYSICS), default="heed",
+                   help="Physics preset passed to mm_sim (default: heed; "
+                        "legacy = the pre-2026-10-16 settings)")
     return p.parse_args()
 
 
@@ -257,7 +272,7 @@ def build_jobs(args):
 
 
 # ============================================================
-def write_wrapper(job_dir: Path, exe: str, setup: str) -> Path:
+def write_wrapper(job_dir: Path, exe: str, setup: str, physics: str) -> Path:
     wrapper = job_dir / "run_job_p2.sh"
     wrapper.write_text(textwrap.dedent(f"""\
         #!/usr/bin/env bash
@@ -276,6 +291,7 @@ def write_wrapper(job_dir: Path, exe: str, setup: str) -> Path:
         echo "  Drift gap : $GAP mm"
         echo "  Theta     : $THETA deg   Spread: $SPREAD mm"
         echo "  Output    : $OUTFILE"
+        echo "  Physics   : {physics or "legacy (option4, PIXE on)"}"
         echo "====================="
 
         EXTRA=""
@@ -296,6 +312,7 @@ def write_wrapper(job_dir: Path, exe: str, setup: str) -> Path:
             --drift-gap "$GAP"  \\
             --gun-theta "$THETA" \\
             --beam-spread "$SPREAD" \\
+            {physics} \\
             $EXTRA
 
         echo "Job done: $(date)"
@@ -367,6 +384,7 @@ def write_manifest(job_dir: Path, rows, args, exe):
     (job_dir / "manifest.json").write_text(json.dumps(
         dict(scan=args.scan, gases=args.gases, exe=exe, git=git,
              drift_gap_mm=args.drift_gap, beam_spread_mm=args.beam_spread,
+             physics=args.physics, mm_sim_physics_flags=PHYSICS[args.physics],
              n_jobs=len(rows)), indent=2))
     return csv_path
 
@@ -408,7 +426,7 @@ def main():
     outdir.mkdir(parents=True, exist_ok=True)
     job_dir.mkdir(parents=True, exist_ok=True)
 
-    wrapper = write_wrapper(job_dir, exe, setup)
+    wrapper = write_wrapper(job_dir, exe, setup, PHYSICS[args.physics])
     submit_file, rows = write_submit(job_dir, wrapper, jobs, outdir,
                                      args.flavour, args.beam_spread, args.seed)
     manifest = write_manifest(job_dir, rows, args, exe)
@@ -419,6 +437,7 @@ def main():
     print(f"  Jobs         : {len(rows)}")
     print(f"  Total events : {total_events:,}")
     print(f"  Beam spread  : {args.beam_spread} mm")
+    print(f"  Physics      : {args.physics}  ({PHYSICS[args.physics] or 'option4, PIXE on'})")
     print(f"  Executable   : {exe}")
     print(f"  Output       : {outdir}")
     print(f"  Submit file  : {submit_file}")

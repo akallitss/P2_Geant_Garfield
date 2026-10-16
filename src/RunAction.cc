@@ -380,7 +380,9 @@ void RunAction::WriteRunMeta() {
     // Fixed-size char buffers, not std::string branches: hadd merges these
     // without a dictionary, which is the whole point of putting the metadata
     // in the file rather than beside it.
-    Char_t   gitHash[32], geoHash[32], gasName[32], gasLabel[64];
+    Char_t   gitHash[32], geoHash[32], gasName[32], gasLabel[64], paiRoute[16];
+    Int_t    heedOn, pixeOn;
+    Double_t gasStepUm, heedEminE;
     Char_t   modeName[24], particle[24], geoDigest[1024];
     Int_t    gitDirty, threadID, schemaVersion = 1;
     Long64_t thrown, written, skippedEmpty;
@@ -425,6 +427,12 @@ void RunAction::WriteRunMeta() {
     energyMeV     = fConfig.energy / MeV;
     seed          = static_cast<Double_t>(fConfig.seed);
     wValue        = gas::MixtureWValue(mix, fConfig.w_cf4_eV);
+    // Ionization physics (2026-10-16): which model made nPrimDrift.
+    heedOn    = fConfig.heed ? 1 : 0;
+    pixeOn    = fConfig.pixe ? 1 : 0;
+    gasStepUm = fConfig.gas_step_um;
+    heedEminE = fConfig.heed_emin_e_MeV;
+    put(paiRoute, sizeof(paiRoute), fConfig.pai);
     gasDensity    = gas::MixtureDensity(mix);
     driftMM       = fConfig.p2_drift_mm;
     ampUM         = fConfig.p2_amp_um;
@@ -471,6 +479,11 @@ void RunAction::WriteRunMeta() {
     t->Branch("gasLabel",       gasLabel,  "gasLabel/C");
     t->Branch("gasDensity_g_cm3", &gasDensity);
     t->Branch("wValue_eV",      &wValue);
+    t->Branch("heed",           &heedOn);
+    t->Branch("pixe",           &pixeOn);
+    t->Branch("pai",            paiRoute, "pai/C");
+    t->Branch("gasStep_um",     &gasStepUm);
+    t->Branch("heedEminE_MeV",  &heedEminE);
     t->Branch("particle",       particle,  "particle/C");
     t->Branch("energy_MeV",    &energyMeV);
     t->Branch("seed",          &seed);
