@@ -11,12 +11,22 @@ Analysis: `scripts/analysis/heed_vs_g4_slab.py`. Tables: `heed_vs_g4_slab.csv` a
 
 ## Summary
 
-- C1, C4 and C6 are confirmed. C2 is confirmed on the bare slab.
+- C1, C4 and C6 are confirmed. C2 is confirmed on the bare slab in mean and median, **but not in shape** (see the correction below).
 - C3 is confirmed only for 11.3: on 11.2.1 the AddPAIModel route works.
 - C5 does not apply to us.
 - **The C2 implication is contested.**
   - In the P2 stack the material adds only **×1.09–1.12 on the mean and ×1.00–1.03 on the median**, not ×1.30 / ×1.15.
   - Most of our 1.35 came from something your slab did not have: **PIXE**. Our PhysicsList has `SetPixe(true)`.
+
+**Correction after looking at the spectra:** "Geant4 PAI = Heed" holds for the mean and the median only. The shapes differ.
+- Heed is more peaked: 57.7 % of events in 15–40 primaries, against 52.1 % for PAI.
+- Geant4 is wider at both ends. **Below 10 primaries it has 2.3× more events: 4.1 % (PAI) and 4.2 % (opt4), against 1.8 % for Heed.**
+- PAI fixes the peak position compared with opt4, but not the low tail.
+- KS distance between Heed and PAI: 0.043.
+- Candidates:
+  - our per-step edep/W conversion (no Fano) against Heed's per-collision electrons
+  - a different number of collisions per 4 mm
+- Do you see the same low tail in MX17? It sets the predicted threshold inefficiency.
 
 ## C1. Heed: confirmed
 
