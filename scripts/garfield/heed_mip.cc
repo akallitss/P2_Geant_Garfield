@@ -43,7 +43,13 @@ int main(int argc, char** argv) {
   const std::string particle = argc > 6 ? argv[6] : "e-";
   const double ekin = argc > 7 ? std::atof(argv[7]) : 1.e8;
   const unsigned seed = argc > 8 ? std::atoi(argv[8]) : 1;
+#ifdef GARFIELD_OLD_RANDOM
+  // Garfield in LCG_106 (commit d3bbb29, the one linked into mm_sim): a
+  // global engine instead of Random::SetEngine.
+  randomEngine.Seed(seed);
+#else
   Random::SetEngine(RandomEngineRoot(seed));
+#endif
 
   // compositions as in src/GasMixtures.cc / make_gas_table.C
   const std::map<std::string, std::vector<std::pair<std::string, double>>> mix = {

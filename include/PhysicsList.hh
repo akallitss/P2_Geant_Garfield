@@ -18,4 +18,5 @@ public:
 private:
     std::string fPAI;   // SimConfig::pai
     bool        fPixe;  // SimConfig::pixe
+    bool        fHeed;  // SimConfig::heed
 };

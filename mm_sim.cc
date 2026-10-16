@@ -76,6 +76,8 @@ void PrintUsage() {
     std::cerr << "  -c <mm>          CFRP wall thickness [mm] for LS cells, full mode only  (default: 1.5)\n";
     std::cerr << "  --pai <route>    PAI ionisation in DriftGas+AmpGas only: config (G4EmConfigurator)\n";
     std::cerr << "                   | params (G4EmParameters::AddPAIModel)  (default: off, option4)\n";
+    std::cerr << "  --heed           Primary ionization in DriftGas from Garfield++/Heed (single thread)\n";
+    std::cerr << "  --heed-emin-e <MeV>  e+- threshold for Heed  (default: 1; mu 10, pi 20, p 90)\n";
     std::cerr << "  --no-pixe        Switch off PIXE (inner-shell ionisation by e+-/hadrons)\n";
     std::cerr << "  --gas-step <um>  Max step in DriftGas/AmpGas, <= 0 = none  (default: 100)\n";
     std::cerr << "  --skip-empty     Write only events with >=1 gas cluster (photon runs;\n";
@@ -135,6 +137,8 @@ int main(int argc, char** argv) {
                 return 1;
             }
         }
+        else if (arg == "--heed")                    config.heed              = true;
+        else if (arg == "--heed-emin-e" && i+1<argc) config.heed_emin_e_MeV   = std::stod(argv[++i]);
         else if (arg == "--no-pixe")                 config.pixe              = false;
         else if (arg == "--gas-step"    && i+1<argc) config.gas_step_um       = std::stod(argv[++i]);
         else if (arg == "--drift-gap"   && i+1<argc) config.p2_drift_mm       = std::stod(argv[++i]);
@@ -188,6 +192,17 @@ int main(int argc, char** argv) {
     ROOT::EnableThreadSafety();
 #endif
 
+    if (config.heed) {
+#ifndef P2_WITH_GARFIELD
+        std::cerr << "--heed: mm_sim was built without Garfield++\n";
+        return 1;
+#endif
+        if (config.nThreads > 1) {
+            std::cerr << "--heed needs -t 1 (Heed is not thread-safe)\n";
+            return 1;
+        }
+    }
+
     CLHEP::HepRandom::setTheEngine(new CLHEP::RanecuEngine);
     CLHEP::HepRandom::setTheSeed(config.seed);
 
@@ -209,7 +224,8 @@ int main(int argc, char** argv) {
         std::cout << "                   note: " << mix.note << "\n";
     std::cout << "  Gas ionisation : " << (config.pai.empty() ? "option4" : "PAI (" + config.pai + ")")
               << ", max step " << config.gas_step_um << " um"
-              << ", PIXE " << (config.pixe ? "on" : "off") << "\n";
+              << ", PIXE " << (config.pixe ? "on" : "off")
+              << (config.heed ? ", DriftGas ionization from Heed" : "") << "\n";
     std::cout << "  Particle       : " << config.particle << "\n";
     std::cout << "  Energy         : " << config.energy/MeV << " MeV" << "\n";
     std::cout << "  Events         : " << config.nEvents << "\n";

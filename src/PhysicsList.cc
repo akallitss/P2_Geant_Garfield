@@ -31,9 +31,10 @@
 #include "G4EmConfigurator.hh"
 #include "G4PAIModel.hh"
 #include "G4ParticleTable.hh"
+#include "G4FastSimulationPhysics.hh"
 
 PhysicsList::PhysicsList(const SimConfig& cfg)
-    : G4VModularPhysicsList(), fPAI(cfg.pai), fPixe(cfg.pixe) {
+    : G4VModularPhysicsList(), fPAI(cfg.pai), fPixe(cfg.pixe), fHeed(cfg.heed) {
     SetVerboseLevel(0);
 
     // EM physics: option4 uses Livermore models below 100 keV for e-/gamma
@@ -60,6 +61,15 @@ PhysicsList::PhysicsList(const SimConfig& cfg)
 
     // Kill neutrons below 1 eV after tracking to avoid infinite loops
     RegisterPhysics(new G4NeutronTrackingCut(0));
+
+    // --heed: the fast-simulation process that hands charged tracks in the
+    // drift gas to HeedGasModel (DetectorConstruction::ConstructSDandField).
+    if (fHeed) {
+        auto* fsp = new G4FastSimulationPhysics();
+        for (const char* p : {"e-", "e+", "mu-", "mu+", "pi+", "pi-", "proton"})
+            fsp->ActivateFastSimulation(p);
+        RegisterPhysics(fsp);
+    }
 
     // ── Atomic deexcitation ───────────────────────────────────────────────
     // Set AFTER registering the EM constructor, whose own ctor writes to the
@@ -104,10 +114,16 @@ void PhysicsList::ConstructProcess() {
     const std::pair<const char*, const char*> procs[] = {
         {"e-", "eIoni"}, {"e+", "eIoni"}, {"mu-", "muIoni"}, {"mu+", "muIoni"},
         {"proton", "hIoni"}, {"pi+", "hIoni"}, {"pi-", "hIoni"}};
-    for (const auto& [name, proc] : procs) {
-        auto* p = G4ParticleTable::GetParticleTable()->FindParticle(name);
-        auto* pai = new G4PAIModel(p, "PAIModel");
-        conf->SetExtraEmModel(name, proc, pai, "P2GasPAI", 0.0, 100.0 * TeV, pai);
+    // With --heed, tracks below the Heed thresholds still step through
+    // P2HeedGas in Geant4: give them PAI there too.
+    std::vector<const char*> regions = {"P2GasPAI"};
+    if (fHeed) regions.push_back("P2HeedGas");
+    for (const char* reg : regions) {
+        for (const auto& [name, proc] : procs) {
+            auto* p = G4ParticleTable::GetParticleTable()->FindParticle(name);
+            auto* pai = new G4PAIModel(p, "PAIModel");
+            conf->SetExtraEmModel(name, proc, pai, reg, 0.0, 100.0 * TeV, pai);
+        }
     }
 }
 
@@ -136,11 +152,13 @@ void PhysicsList::SetCuts() {
         reg->SetProductionCuts(cuts);
     }
 
-    // The PAI gas region needs a cuts object of its own: G4EmModelManager
+    // The PAI and Heed gas regions need a cuts object of their own: G4EmModelManager
     // assigns couples to regions by G4ProductionCuts POINTER, so a region
     // left on the default cuts would capture every couple in the world and
     // put PAI in all the solids too. Same 1 um as P2FineCut.
-    if (auto* reg = G4RegionStore::GetInstance()->GetRegion("P2GasPAI", false)) {
+    for (const char* name : {"P2GasPAI", "P2HeedGas"}) {
+        auto* reg = G4RegionStore::GetInstance()->GetRegion(name, false);
+        if (!reg) continue;
         auto* cuts = new G4ProductionCuts();
         cuts->SetProductionCut(1.0 * um, G4Gamma::Gamma());
         cuts->SetProductionCut(1.0 * um, G4Electron::Electron());

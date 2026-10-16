@@ -53,6 +53,26 @@ message(STATUS "Source revision: ${P2_GIT_HASH} (dirty: ${P2_GIT_DIRTY})")
 # Source files
 file(GLOB SOURCES ${PROJECT_SOURCE_DIR}/src/*.cc)
 
+# ── Garfield++ (optional): Heed for the drift-gas ionization, --heed ─────
+# Must be built against the SAME ROOT and Geant4 as this program. On lxplus
+# that is the Garfield++ of the LCG view used by setup_lxplus.sh (LCG_106:
+# Geant4 11.2.1, ROOT 6.32.02, commit d3bbb29); its Heed was checked against
+# the pinned standalone build (same spectra, docs/results/heed/pai).
+set(P2_GARFIELD_DIR "$ENV{GARFIELD_INSTALL}" CACHE PATH "Garfield++ install prefix")
+if(NOT P2_GARFIELD_DIR)
+    set(P2_GARFIELD_DIR "/cvmfs/sft.cern.ch/lcg/releases/LCG_106/Garfield++/HEAD/x86_64-el9-gcc13-opt")
+endif()
+find_path(GARFIELD_INCLUDE_DIR Garfield/TrackHeed.hh HINTS ${P2_GARFIELD_DIR}/include NO_DEFAULT_PATH)
+find_library(GARFIELD_LIBRARY Garfield HINTS ${P2_GARFIELD_DIR}/lib64 ${P2_GARFIELD_DIR}/lib NO_DEFAULT_PATH)
+set(P2_WITH_GARFIELD OFF)
+if(GARFIELD_INCLUDE_DIR AND GARFIELD_LIBRARY AND ROOT_FOUND)
+    set(P2_WITH_GARFIELD ON)
+    message(STATUS "Garfield++ found: ${GARFIELD_LIBRARY} (--heed enabled)")
+else()
+    list(FILTER SOURCES EXCLUDE REGEX "HeedGasModel\\.cc$")
+    message(STATUS "Garfield++ not found under ${P2_GARFIELD_DIR}: --heed disabled")
+endif()
+
 # Build the executable
 add_executable(mm_sim mm_sim.cc ${SOURCES})
 target_link_libraries(mm_sim ${Geant4_LIBRARIES})
@@ -67,6 +87,21 @@ if(ROOT_FOUND)
     message(STATUS "ROOT found and enabled: ${ROOT_VERSION}")
 else()
     message(STATUS "ROOT not found; CSV output only")
+endif()
+
+if(P2_WITH_GARFIELD)
+    target_include_directories(mm_sim PRIVATE ${GARFIELD_INCLUDE_DIR})
+    target_link_libraries(mm_sim ${GARFIELD_LIBRARY})
+    get_filename_component(_garf_libdir ${GARFIELD_LIBRARY} DIRECTORY)
+    set_target_properties(mm_sim PROPERTIES BUILD_RPATH "${_garf_libdir}" INSTALL_RPATH "${_garf_libdir}")
+    target_compile_definitions(mm_sim PRIVATE P2_WITH_GARFIELD
+        P2_HEED_DATABASE="${P2_GARFIELD_DIR}/share/Heed/database")
+    # Older Garfield (LCG_106) has a global randomEngine, no Random::SetEngine.
+    file(READ ${GARFIELD_INCLUDE_DIR}/Garfield/Random.hh _garf_random)
+    string(FIND "${_garf_random}" "SetEngine" _garf_setengine)
+    if(_garf_setengine EQUAL -1)
+        target_compile_definitions(mm_sim PRIVATE GARFIELD_OLD_RANDOM)
+    endif()
 endif()
 
 # Copy macros to build dir

@@ -125,6 +125,15 @@ void SteppingAction::UserSteppingAction(const G4Step* step) {
     bool inDrift = (volName == "DriftGas");
     bool inAmp   = (volName == "AmpGas");
 
+    // A step made by HeedGasModel: the electrons were recorded there, one
+    // cluster each; only the energy is added here.
+    const G4VProcess* pds = step->GetPostStepPoint()->GetProcessDefinedStep();
+    if (inDrift && pds && pds->GetProcessType() == fParameterisation) {
+        data.edepDrift += edep/eV;
+        if (isPrimary) data.primaryInDrift = true;
+        return;
+    }
+
     if (inDrift || inAmp) {
         int parentID = track->GetParentID();
         const std::string pName = track->GetDefinition()->GetParticleName();

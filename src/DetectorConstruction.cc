@@ -33,6 +33,10 @@
 #include "G4SDManager.hh"
 #include "G4UserLimits.hh"
 #include "G4Region.hh"
+#include "G4RegionStore.hh"
+#ifdef P2_WITH_GARFIELD
+#include "HeedGasModel.hh"
+#endif
 #include "G4LogicalVolumeStore.hh"
 
 #include "G4PVReplica.hh"
@@ -1194,6 +1198,7 @@ G4VPhysicalVolume* DetectorConstruction::ConstructP2() {
                               "DriftCathode_Mylar", "DriftCathode_Mylar2"}) {
             const bool gasVol = std::string(n) == "DriftGas" || std::string(n) == "AmpGas";
             if (gasVol && !fConfig.pai.empty()) continue;   // -> P2GasPAI below
+            if (std::string(n) == "DriftGas" && fConfig.heed) continue;   // -> P2HeedGas
             if (auto* lv = G4LogicalVolumeStore::GetInstance()->GetVolume(n, false))
                 fine->AddRootLogicalVolume(lv);
         }
@@ -1266,13 +1271,19 @@ G4VPhysicalVolume* DetectorConstruction::ConstructSlab() {
 }
 
 // ============================================================
-// --pai: DriftGas and AmpGas form the region P2GasPAI, which carries the PAI
-// model (PhysicsList::ConstructProcess) and its OWN production-cuts object
-// (PhysicsList::SetCuts). Solids stay in P2FineCut with option4.
+// Gas regions, each with its OWN production-cuts object (PhysicsList::SetCuts):
+//   --heed: DriftGas alone forms P2HeedGas, the envelope of HeedGasModel.
+//   --pai : the remaining gas (AmpGas, and DriftGas without --heed) forms
+//           P2GasPAI, which carries the PAI model (PhysicsList).
+// Solids stay in P2FineCut with option4.
 void DetectorConstruction::MakeGasPAIRegion() {
+    if (fConfig.heed && fDriftGasLV) {
+        auto* reg = new G4Region("P2HeedGas");
+        reg->AddRootLogicalVolume(fDriftGasLV);
+    }
     if (fConfig.pai.empty()) return;
     auto* reg = new G4Region("P2GasPAI");
-    if (fDriftGasLV) reg->AddRootLogicalVolume(fDriftGasLV);
+    if (fDriftGasLV && !fConfig.heed) reg->AddRootLogicalVolume(fDriftGasLV);
     if (fAmpGasLV)   reg->AddRootLogicalVolume(fAmpGasLV);
 }
 
@@ -1295,4 +1306,12 @@ void DetectorConstruction::ConstructSDandField() {
     if (fHe3GasLV) {
         fHe3GasLV->SetUserLimits(new G4UserLimits(1.0*mm));
     }
+#ifdef P2_WITH_GARFIELD
+    // One model per thread (this method runs on each worker); the model
+    // registers itself with the region's G4FastSimulationManager.
+    if (fConfig.heed && fDriftGasLV) {
+        auto* reg = G4RegionStore::GetInstance()->GetRegion("P2HeedGas", false);
+        new HeedGasModel("HeedGas", reg, fConfig, fDriftGasLV->GetSolid());
+    }
+#endif
 }

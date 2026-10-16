@@ -49,6 +49,11 @@ struct SimConfig {
     // region sharing the default cuts pointer captures every couple in the
     // world (G4EmModelManager::Initialise matches regions by cuts pointer).
     std::string pai;
+    // Primary ionization in DriftGas from Garfield++/Heed (HeedGasModel.hh)
+    // instead of Geant4 edep / W. Charged particles above threshold only;
+    // e+- threshold here, mu 10, pi 20, p 90 MeV fixed.
+    bool        heed = false;
+    double      heed_emin_e_MeV = 1.0;
     // PIXE (inner-shell ionisation by charged particles -> Auger/fluo).
     // Geant4 has e+- and hadron PIXE cross sections but none for muons.
     bool        pixe = true;

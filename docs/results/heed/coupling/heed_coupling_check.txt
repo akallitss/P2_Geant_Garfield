@@ -1,0 +1,23 @@
+case                                 mean median   <10  10-15  15-40 40-100   >100
+-- bare slab, Ar/iso e-
+Heed standalone                      39.88     29   1.78   9.50  57.66  26.76   4.30
+Geant4 + Heed (--heed)               39.85     30   1.80   9.50  57.50  26.93   4.28   KS 0.0035
+Geant4 PAI (edep/W)                  39.63     29   4.06  11.51  52.13  27.85   4.44   KS 0.0430
+-- bare slab, Ne/iso e-
+Heed standalone                      18.69     14  25.57  29.45  37.96   5.88   1.13
+Geant4 + Heed (--heed)               18.54     14  25.83  29.30  37.80   6.03   1.04   KS 0.0028
+Geant4 PAI (edep/W)                  18.95     14  26.14  27.42  38.89   6.42   1.14   KS 0.0187
+-- bare slab, Ar/iso mu 150 GeV
+Heed standalone                      42.46     31   1.54   8.06  55.22  30.20   4.97
+Geant4 + Heed (--heed)               42.34     31   1.45   8.19  55.14  30.33   4.89   KS 0.0036
+-- full P2 stack, Ar/iso, 100 MeV e-, PIXE off
+Geant4 PAI, no step limit            44.37     30   3.78  11.95  50.79  27.88   5.60
+Geant4 + Heed, no step limit         46.48     30   1.56   9.36  56.09  27.15   5.84
+Geant4 + Heed, 100 um step           47.08     30   1.60   9.46  55.62  27.33   5.99
+   downstream means [eV]: mesh, pad Cu, amp-gas primaries
+   Geant4 PAI, no step limit           9448    20419   1.55
+   Geant4 + Heed, no step limit        9350    20699   1.61
+   Geant4 + Heed, 100 um step          9454    20701   1.67
+-- full P2 stack, 30 keV photons: P(drift ionization), mean nPrimDrift when > 0
+   Geant4 PAI                      P = 0.00447 +- 0.00007   <n> = 472.9
+   Geant4 + Heed                   P = 0.00447 +- 0.00007   <n> = 472.9
