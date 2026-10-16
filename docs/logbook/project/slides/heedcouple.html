@@ -1,0 +1,11 @@
+<section id="heedcouple" style="background:#FFFFFF;color:#111111;font-family:Arial, sans-serif;padding:128px;padding-top:96px;display:flex;flex-direction:column;gap:20px">
+<h2 style="font-size:56px;font-weight:600">Heed inside Geant4: drift-gas ionization from Garfield++</h2>
+<div style="display:flex;gap:40px;align-items:start">
+<img src="/_blob/658bebf7b7057e6dca60cda7f1ff970f" alt="Bare 4 mm Ar/iso slab, 100 MeV electrons: Geant4 with Heed coupled lies on top of Heed standalone (P(n below 10) 1.8 percent both), while Geant4 PAI with edep over W gives 4.1 percent" style="width:1000px;height:625px;object-fit:contain">
+<div style="flex:1;display:flex;flex-direction:column;gap:20px">
+<ul style="font-size:24px;line-height:1.35"><li>Cause of the low tail: Geant4 edep / W has no collisions; Heed gives every ionizing collision ≥ 1 electron</li><li><b>mm_sim --heed</b>: charged tracks in the drift gas (e± &gt; 1 MeV, µ &gt; 10 MeV) → Heed; one cluster per electron; the particle continues in Geant4</li><li>Slab: = Heed standalone in shape (KS 0.003), e⁻, µ, Ne</li></ul>
+<table style="font-size:24px;color:#111111"><tr><th style="width:52%">Full P2 stack, 100 MeV e⁻</th><th style="width:24%">PAI</th><th style="width:24%">+ Heed</th></tr><tr><td>P(n &lt; 10)</td><td>3.8 %</td><td><b>1.6 %</b></td></tr><tr><td>median / mean</td><td>30 / 44.4</td><td>30 / 46.5</td></tr><tr><td>mesh, pads, photons</td><td colspan="2">unchanged</td></tr></table>
+</div>
+</div>
+<aside>Implementation: src/HeedGasModel.cc, a G4VFastSimulationModel on region P2HeedGas (DriftGas only), commit 51abec5. Garfield++ from LCG_106 (same Geant4 11.2.1 / ROOT 6.32 as mm_sim); its Heed equals the pinned standalone build (P(n<10) 1.76 vs 1.78 %). Heed tracks straight lines in the gas (no multiple scattering: hence the 1 MeV e± threshold; softer electrons stay in Geant4 with edep/W); Heed delta electrons stop at the gas boundary; single thread only. Two bugs found in validation and fixed: Heed returns no clusters for the full 55 cm wedge box and for a start point a rounding error outside the gas (now a +-10 cm box around the entry, 1 um z margin). Mean +2.1 +- 1.1 in the stack: rare events with electrons from the solids, same 2 % of events as without Heed. Step limit no longer matters. PIXE off in all these runs. Production defaults not changed yet.</aside>
+</section>
