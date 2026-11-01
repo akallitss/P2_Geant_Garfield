@@ -36,9 +36,11 @@ Particles:
 | drift → pads | `stage_b/` | runs, **but transparency and pillar losses are not in it yet** |
 | electronics | `vmm/` | runs standalone, **not yet on the Stage B output** |
 
-So the pieces exist, but nobody has yet run the chain end to end into a VMM efficiency.
-That is the deliverable. Before it can be trusted, one discrepancy with data needs
-understanding (§4).
+The drift-gap and gas question doesn't need Stage B. The timing toy `vmm/time_resolution.py`
+already goes from primaries to VMM efficiency and σ_t, with the gap as a parameter. It needs
+updating with the validated inputs (Magboltz, Heed, Garfield transparency), and that update
+is the main task (`OPEN_PROBLEMS.md` §2, item 5a). Stage B → VMM is the later, complete
+check. One discrepancy with data also needs understanding (§4).
 
 ## 3. Numbers to know
 
@@ -79,7 +81,9 @@ the full to-do list: `OPEN_PROBLEMS.md`.
    against the SPS and cosmic drift scans, and answer: *can a plausible geometry change explain
    the 150–200 V/cm shift?* It needs no new simulation, so it's a good way into the data, the
    scripts and the rules.
-4. Then the efficiency chain (`OPEN_PROBLEMS.md` §2, item 5), which is the deliverable.
+4. Then **the drift-gap and gas answer** (`OPEN_PROBLEMS.md` §2, item 5a): update the timing
+   toy with the validated inputs, check it against the SPS timing, and compare gaps and gases
+   at equal gain. This is the deliverable.
 
 ## 6. Where things are
 

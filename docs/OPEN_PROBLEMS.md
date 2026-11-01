@@ -10,10 +10,13 @@ change the efficiency and the timing resolution of the detector, and which of th
 more for track reconstruction and physics, in numbers?** For each question: what exists already,
 and whether simulation or data can answer it.
 
-1. **Efficiency and timing vs drift gap and gas.** *Simulation can answer this.*
-   - The primaries for 4 and 5 mm gaps and four gases are in `rnd2026_heed`.
-   - What is missing is the chain to the electronics: Stage B → VMM, efficiency vs threshold
-     (§2, item 5).
+1. **Efficiency and timing vs drift gap and gas.** *Simulation can answer this, without Stage B.*
+   The timing toy `vmm/time_resolution.py` already runs the whole per-pad chain (primaries →
+   drift → Polya gain → VMM shaper → threshold crossing). It outputs efficiency vs threshold
+   *and* σ_t, with the gap as a parameter, but its gas inputs are August placeholders. Updating
+   it with the validated inputs is the route to the answer (§2, item 5a). Stage B only adds
+   pad-level effects (charge sharing, pillars, beam position, photon events), which hardly
+   depend on the gap. It is the later, complete check (item 5b).
 2. **Timing resolution vs drift gap, quantitatively.** *Simulation can answer this.*
    - With a wider gap, the first cluster is spread over a longer drift, so σ_t grows. The size
      depends on cluster statistics, v_d and diffusion.
@@ -24,6 +27,7 @@ and whether simulation or data can answer it.
        (`results/drift_velocity/`)
    - Open: the data are slower than Magboltz at 250–500 V/cm, so stay in the validated field range
      or understand that first.
+   - This is the same toy as question 1 (§2, item 5a).
 3. **Timing or efficiency: which matters more for tracking and physics, in numbers?** *Neither the
    detector simulation nor detector data can answer this alone.* It needs the requirement from the
    tracking/physics side: the time window needed against pile-up at the P2 rates, and what an
@@ -100,7 +104,10 @@ e-folding is 31–35 V at every gap, but the data give 22–28 V. Absolute gain 
 - Output: 121 transparency results and 33 gain results, as the `TRANSPARENCY`/`GAIN` lines in
   `$P2_DATA/condor_transp/geom_<tag>_E<E>_<gas>.out`.
 
-## 2. To-do, in priority order
+## 2. To-do
+
+Start with item 1. The main line after that is **item 5a**, which answers the drift-gap and gas
+question. Items 2–4 and 6 are side threads on understanding the data; they can run in parallel.
 
 1. **Geometry vs data.** Plot T(E) for every variation above on the SPS scan (450 V,
    ArCO2Iso9352) and the cosmic det1 scan (`_vm415`, ArIso). Do it with a free scale *and* with
@@ -114,10 +121,36 @@ e-folding is 31–35 V at every gap, but the data give 22–28 V. Absolute gain 
    - (a) the frac30/peak timing shift for an amplification-gap change: do −21 / −11 ns per e-fold come out?
    - (b) a gain-vs-gap table at 420 V, to turn std ln G = 0.269 into σ_gap.
    - (d) cosmic 125 V/cm (+120 ns, σ 82 ns) vs Magboltz v_d and diffusion.
-5. **Efficiency chain, the deliverable**:
-   1. Put T (wire losses only) and pillar losses into Stage B.
-   2. Run Stage B → VMM on `rnd2026_heed`.
-   3. Get VMM efficiency vs gain for the rnd2026 options (iso 5 → 10 %, drift 4 → 5 mm, Ne/iso).
+5. **The drift-gap and gas answer, the deliverable:**
+   - **5a. Update the timing toy** (`vmm/time_resolution.py`) with the validated inputs, then use
+     it to compare the options. It runs today
+     (`python3 vmm/time_resolution.py --gas ArIso_95_5 --gap 3.964 --tp 200`), but:
+     0. **Housekeeping:**
+        - It uses its own gas names (`ArIso_95_5`, …), not the `mm_sim` ones.
+        - It lacks three of the four rnd2026 gases (ArIso9010, NeIso, NeIso8515).
+        - Its default gap is 3 mm instead of 3.964.
+        - The `T_drift` column it prints is the 3 mm placeholder, even with `--gap`.
+
+        Align the names with `src/GasMixtures.cc` and add the missing gases.
+     1. **Drift velocity and diffusion:** replace the placeholder `t_drift_3mm_ns` / `sigma_L` with
+        `stage_b.gas.MagboltzTable().for_gas(gas, E_drift)`.
+        `scripts/analysis/sps_drift_velocity_check.py` already does this for the DREAM electronics.
+     2. **Primaries:** replace the PDG averages with Heed. Either sample the drift-gas clusters
+        of `rnd2026_heed` events (cluster z and electrons per cluster, both gaps, real angles), or
+        run `heed_mip` for other gaps. The low tail is what matters, and PDG averages miss it.
+     3. **Transparency:** survival probability per electron from the Garfield table at that
+        field and gas (`results/mesh/`).
+     4. **Gain:** keep it a free mean value. Compare options **at equal gain** (a relative
+        statement, safe from the amplification-gap problem in §0, item 8). Then compare them at
+        the gain each can reach stably (§0, item 4).
+     5. **Validate before predicting:** reproduce the SPS hit-time widths at ≥ 625 V/cm
+        (`results/drift_velocity/`) and the VMM efficiency at the SPS settings.
+     6. **Output:** efficiency vs threshold and σ_t for drift gaps {3.964, 5, maybe 6} mm ×
+        gases {ArIso, ArIso9010, NeIso, NeIso8515}, at equal gain, with the low tails shown.
+   - **5b. Stage B → VMM, the complete check** (later): put T (wire losses only) and pillar
+     losses into Stage B, export per-pad electron arrival lists (the VMM shaper tier needs them;
+     Stage B now writes only the summed charge and first time), and run it on `rnd2026_heed`. It
+     cross-checks 5a and adds charge sharing, pillars and the photon (e/γ) events.
 6. Gain-slope mismatch: try a field-dependent Penning r, and check the SPS MPV near threshold.
 7. Small items:
    - The Geant4 mesh default is still 45/63 µm (`include/SimConfig.hh`, `p2_mesh_open_um`),

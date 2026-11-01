@@ -169,7 +169,9 @@ python3 -m stage_b.selftest
 ```
 Options: `python3 -m stage_b.run -h`. Every run writes a `StageBMeta` tree with all its
 assumptions. Joining Stage B to the VMM emulator (`vmm/vmm_emulator.py`) is the open
-deliverable (`OPEN_PROBLEMS.md` §2, item 5). Read `stage_b/README.md` and `vmm/README.md` first.
+later, complete check (`OPEN_PROBLEMS.md` §2, item 5b). For the drift-gap question itself,
+start from the timing toy instead (item 5a): `python3 vmm/time_resolution.py --breakdown`.
+Read `stage_b/README.md` and `vmm/README.md` first.
 
 ## 9. Compare with SPS or cosmic data
 
