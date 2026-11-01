@@ -97,7 +97,33 @@ the full to-do list: `OPEN_PROBLEMS.md`.
 - **Design files:** `../design/` (gerbers, masks). Every geometry number and its source:
   `P2_GEOMETRY.md`. What the simulation builds: `P2_MODEL.md`.
 
-## 7. People
+## 7. Related repo: the data analysis
+
+The SPS and cosmic-bench data analysis is a separate repo:
+
+```bash
+git clone https://github.com/akallitss/P2_basket_analysis.git
+```
+
+**Read it as reference: code, method and results.** You mostly won't be running it. Many of its
+scripts point to paths on Alexandra's laptop, and the raw data (CERN EOS, her external disk)
+isn't available to you. The outputs the simulation needs are already in `$P2_DATA` (SPS MPVs,
+spark rates, run configs, Fe55). The parts that matter for this project:
+
+| path | what |
+|---|---|
+| `RESULTS_gap_timing.md` | data-side results on gap and timing: charging excluded, low-field loss, gain–timing slopes, the requests to the simulation (`OPEN_PROBLEMS.md` §2, item 4) |
+| `HANDOFF_gap_timing_2026-10-15.md` | the questions that study started from |
+| `sps_beam_analysis/PIPELINE_OVERVIEW_2026-07-26.md` | how the SPS analysis is organised (numbered stages) |
+| `sps_beam_analysis/vmm_threshold_tradeoff/` | VMM threshold analysis and efficiency model, behind `vmm/README.md` §6b |
+| `sps_beam_analysis/vmm_dream_matching/EFFICIENCY_TABLE.md` | measured VMM vs DREAM efficiency per run |
+| `sps_beam_analysis/26_hv_spark_qa.py` | how spark rate vs mesh HV is made (`$P2_DATA/sps_products/.../spark_qa_*.csv`) |
+| `cosmic_bench_analysis/` (start from `run_p2_pipeline.sh`) | cosmic bench: Fe55 gain, drift scans, efficiency maps (Ar/iso 95/5) |
+
+If you need a data product that isn't in `$P2_DATA`, ask Alexandra for the output file rather
+than trying to rerun the pipeline.
+
+## 8. People
 
 - **Alexandra Kallitsopoulou** (CEA Saclay): geometry, run conditions, history.
 - **Matthieu Gailliard**: P2Sim and the background photon spectra (`BkgHistograms.root`).
