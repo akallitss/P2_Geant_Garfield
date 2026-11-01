@@ -175,8 +175,9 @@ Read `stage_b/README.md` and `vmm/README.md` first.
 
 ## 9. Compare with SPS or cosmic data
 
-- **Data products** come from `sps_products.tar` in `$P2_DATA/sps_products/` (Landau MPV vs HV per
-  scan and detector, and the corrected `run_config.json` of each run). The analysis scripts find
+- **Data products** come from `sps_products.tar` in `$P2_DATA/sps_products/`: Landau MPV vs HV per
+  scan and detector, spark rate vs mesh HV (`26_hv_spark_qa/spark_qa_<det>.csv`), and the
+  corrected `run_config.json` of each run. The analysis scripts find
   them through `scripts/analysis/p2paths.py`.
 - **Gas and HV of a run:** read them from the run config, never from memory or the logbook:
   ```bash

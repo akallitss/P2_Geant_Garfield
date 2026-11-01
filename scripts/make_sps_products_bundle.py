@@ -13,6 +13,7 @@ then put sps_products.tar next to the other bundle tarballs
 
 Contents (paths inside the tar, relative to $P2_DATA):
   sps_products/analysis/<P2_IN|P2_MID|P2_OUT>/<scan>/.../beam_mpv_vs_hv_spark_vetoed.csv
+  sps_products/analysis/<det>/<scan>/.../26_hv_spark_qa/spark_qa_<det>.csv  (spark rate vs mesh HV)
   sps_products/runs/<run>/run_config.json   (corrected gas + gas_note; HV per sub-run)
   cosmic_products/det2/.../fe55_gain_vs_hv_spark_vetoed.csv
 
@@ -54,11 +55,15 @@ def main():
     runs = data / "SPS_Beam_Test/mpgd26_workspace/eos_inventory/runs"
     fe55 = data / "Cosmic_Bench/Analysis/det2"
 
-    n = {"csv": 0, "run_config": 0, "fe55": 0}
+    n = {"csv": 0, "spark_qa": 0, "run_config": 0, "fe55": 0}
     with tarfile.open(a.out, "w") as tar:
         for f in sorted(ana.rglob("beam_mpv_vs_hv_spark_vetoed.csv")):
             tar.add(f, arcname=f"sps_products/analysis/{f.relative_to(ana)}")
             n["csv"] += 1
+        # stage 26_hv_spark_qa: spark rate vs mesh HV per sub-run (HV-headroom curves)
+        for f in sorted(ana.rglob("spark_qa_*.csv")):
+            tar.add(f, arcname=f"sps_products/analysis/{f.relative_to(ana)}")
+            n["spark_qa"] += 1
         for f in sorted(runs.glob("*/run_config.json")):
             clean = json.dumps(scrub(json.load(open(f))), indent=1).encode()
             assert b'"password"' not in clean.lower()

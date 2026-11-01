@@ -77,7 +77,7 @@ in the docs is `$P2_DATA/X`.
 | cell_gap150 | 6.4 GB | COMSOL field maps of the final mesh cell, 8 drift fields |
 | transparency | 0.2 GB | all Garfield transparency outputs |
 | condor_transp | 45 MB | geometry-run logs (`TRANSPARENCY`/`GAIN` lines), the input to your first task |
-| sps_products | 1 MB | SPS Landau MPV vs HV per scan and detector, corrected `run_config.json` per run (credentials stripped), the Fe55 gain table |
+| sps_products | 1 MB | SPS Landau MPV vs HV per scan and detector, spark rate vs mesh HV (`spark_qa_*.csv`), corrected `run_config.json` per run (credentials stripped), the Fe55 gain table |
 | optional | ~19 GB | validation cell (`cell_nik`), cosmic cell, gap-scan cells, legacy sample, COMSOL model |
 
 The SPS and cosmic raw data are not included. The simulation work only needs the products in

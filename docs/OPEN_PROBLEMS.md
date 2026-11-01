@@ -39,8 +39,9 @@ and whether simulation or data can answer it.
      charge per avalanche to compare with the Raether limit.
    - Spark rates vs HV are measured: the SPS stage `26_hv_spark_qa.py` (and the cosmic bench's
      `07_hv_spark_qa.py`) in `P2_basket_analysis` turn the HV-monitor current spikes into spark rate
-     vs mesh HV per detector ("the HV-headroom curve"). These outputs are **not** in the data
-     bundle (`sps_products` only has spark-*vetoed* MPVs), so ask for the `spark_qa_<det>.csv` files.
+     vs mesh HV per detector ("the HV-headroom curve"). The SPS outputs are in the data bundle:
+     `$P2_DATA/sps_products/analysis/<det>/<scan>/.../26_hv_spark_qa/spark_qa_<det>.csv` (60 files),
+     one row per sub-run: mesh V, number of sparks, spark rate, mesh current, live fraction.
    - Result: the usable voltage window per gas. The gain gained by any option must fit in it.
 5. **Drift voltage.** It hardly changes the avalanche itself, but it changes:
    - what reaches it: the mesh transparency, §1 here
