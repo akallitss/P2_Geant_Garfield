@@ -229,9 +229,44 @@ Downstream of the digitizer, clustering merges hit pads using
 `nl_map.PadMap.geometric_neighbors` — independent of the NL setting, and the
 place where the ~10 % of hits that do share charge get used.
 
+## 6b. SPS July 2026 VMM operating point, as run *(recorded 2026-11-01)*
+
+This is the configuration behind the measured VMM efficiency (P2_OUT 85.3 %, best run_46), which
+any emulator result must reproduce first. Sources:
+- `P2_basket_analysis/sps_beam_analysis/vmm_threshold_tradeoff/`
+  - `runcfg/cfg.txt` and `runcfg/sdt.json`: the chip configs per run
+  - `part4_numbers.json`: baselines
+  - `note_figs2.py`: conversions
+- the note "Testing the VMM threshold theory step by step" (2026-10-21, Alexandra's CERN site)
+- `DAQ_Control_VMM_Beam/docs/HANDOFF_COSMIC_THRESHOLD_SCAN.md`
+
+| setting | value |
+|---|---|
+| gain | **4.5 mV/fC** (`sg = 3`) on all P2 chips (hybrids 1–9). run_50 used 3.0 mV/fC. The trigger hybrid H0 is at 1 mV/fC |
+| peaking time | **200 ns** (config names `…_peaktime200…`; set in the base YAML `p2b-config-cern-base.yaml` on the DAQ machine) |
+| threshold `sdt` (DAC) | runs 48/52/66 ("opt"): **230** on chips 2, 3, 6, 8, 10, 11, 13–18; chip 4: 300, 5: 245, 7: 285, 9: 300, 12: 255, 19: 265. run_46: mostly 224 (4: 300, 5: 256, 7: 288, 9: 256, 12: 256). run_53: default 300 |
+| chip baselines | 180–212 DAC (per chip in `part4_numbers.json`), systematic ±6–8 DAC |
+| threshold above baseline | the quantity that matters: `d = sdt − baseline`; typically 20–50 DAC in July |
+| DAC → mV | threshold = 0.801 × sdt + 25.2 mV (vmmsc `ThresholdDAC_to_mV`) |
+| DAC → VMM ADC | 0.9 ADC per DAC (measured on beam ADC edges; VMM 19: 0.85, chips 14–18 ≈ 0.93) |
+| VMM ↔ DREAM | 0.196 VMM ADC per DREAM ADC at 4.5 mV/fC; DREAM is 18 ADC/fC (`docs/results/gain/dream_calibration.md`) |
+| chip ↔ hybrid | chip v sits at `Hyb v//2 Vmm v%2`; sdt = spi2·64 + spi1 (never trust the `#` comments in config files) |
+
+To express the threshold as charge, there are two routes:
+- **nominal:** d × 0.801 mV / 4.5 mV/fC ≈ 0.18 fC per DAC
+- **via DREAM:** d × 0.9 / (0.196 × 18) ≈ 0.26 fC per DAC, in DREAM-collected charge
+
+They differ by about ×1.4 (different shaping, 200 vs 180 ns, and charge collection). Say which one
+you use, and calibrate the emulator so the July settings reproduce the measured efficiency.
+
+Not recorded anywhere found here: **neighbour logic (`sng`)**, **TAC slope / TDO mode**, and the
+**noise (ENC) on the real pads**. The vmmsc pedestal/noise calibration on the P2 hybrids is still
+to be done (threshold handoff §5.0). Get these from the base YAML on the DAQ machine and the planned
+cosmic calibration.
+
 ## 7. Open items (NEEDS-DATA — ask BASKET/Saclay; none block coding)
 
-1. **Operating point**: which gain (mV/fC), peaking time, and threshold-DAC
+1. ✅ *(answered for SPS July 2026, see §6b)* **Operating point**: which gain (mV/fC), peaking time, and threshold-DAC
    working point does the BASKET prototype run? (They quote 21 fC expected
    signal and 62 fC threshold-ish floor — clarify what "62 fC–2 pC" is:
    dynamic range at which gain?)

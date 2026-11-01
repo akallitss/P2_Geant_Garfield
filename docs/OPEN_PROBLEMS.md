@@ -144,7 +144,10 @@ question. Items 2–4 and 6 are side threads on understanding the data; they can
         statement, safe from the amplification-gap problem in §0, item 8). Then compare them at
         the gain each can reach stably (§0, item 4).
      5. **Validate before predicting:** reproduce the SPS hit-time widths at ≥ 625 V/cm
-        (`results/drift_velocity/`) and the VMM efficiency at the SPS settings.
+        (`results/drift_velocity/`) and the VMM efficiency at the SPS settings. The as-run gain,
+        peaking time, per-chip thresholds and DAC → fC conversions are in `vmm/README.md` §6b. The
+        data-side threshold analysis and its efficiency model are in
+        `P2_basket_analysis/sps_beam_analysis/vmm_threshold_tradeoff/`.
      6. **Output:** efficiency vs threshold and σ_t for drift gaps {3.964, 5, maybe 6} mm ×
         gases {ArIso, ArIso9010, NeIso, NeIso8515}, at equal gain, with the low tails shown.
    - **5b. Stage B → VMM, the complete check** (later): put T (wire losses only) and pillar
