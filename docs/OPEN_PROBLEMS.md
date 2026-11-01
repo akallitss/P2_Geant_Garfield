@@ -3,6 +3,68 @@
 State as of 2026-10-21 (last physics commit 7c24ff0). Read `HANDOVER.md` first.
 This file has the detail once you start working.
 
+## 0. The questions behind the work (Alexandra's notes, 2026-11-01)
+
+Everything below serves one end question: **how do a larger drift gap and/or a different gas
+change the efficiency and the timing resolution of the detector, and which of the two matters
+more for track reconstruction and physics, in numbers?** For each question: what exists already,
+and whether simulation or data can answer it.
+
+1. **Efficiency and timing vs drift gap and gas.** *Simulation can answer this.*
+   - The primaries for 4 and 5 mm gaps and four gases are in `rnd2026_heed`.
+   - What is missing is the chain to the electronics: Stage B → VMM, efficiency vs threshold
+     (§2, item 5).
+2. **Timing resolution vs drift gap, quantitatively.** *Simulation can answer this.*
+   - With a wider gap, the first cluster is spread over a longer drift, so σ_t grows. The size
+     depends on cluster statistics, v_d and diffusion.
+   - Starting points:
+     - first prediction: 10–13 ns (Ar mixes), 15–25 ns (Ne mixes), from `vmm/time_resolution.py`
+       and `research/TIME_RESOLUTION_NOTES.md`
+     - Magboltz v_d and diffusion are validated against SPS hit times at ≥ 625 V/cm
+       (`results/drift_velocity/`)
+   - Open: the data are slower than Magboltz at 250–500 V/cm, so stay in the validated field range
+     or understand that first.
+3. **Timing or efficiency: which matters more for tracking and physics, in numbers?** *Neither the
+   detector simulation nor detector data can answer this alone.* It needs the requirement from the
+   tracking/physics side: the time window needed against pile-up at the P2 rates, and what an
+   efficiency loss per wheel costs in reconstructed tracks. Get those numbers from the collaboration
+   (Matthieu's rates are one input), then express the gap/gas options in them.
+4. **Stability before discharges take over, in terms of applied voltages.** *Mostly data.*
+   - Spark probability is not simulated.
+   - Simulation provides the gain at each voltage (`mesh_gain.cc`, Penning r ≈ 0.36), and hence the
+     charge per avalanche to compare with the Raether limit.
+   - Spark rates vs HV are measured: the SPS stage `26_hv_spark_qa.py` (and the cosmic bench's
+     `07_hv_spark_qa.py`) in `P2_basket_analysis` turn the HV-monitor current spikes into spark rate
+     vs mesh HV per detector ("the HV-headroom curve"). These outputs are **not** in the data
+     bundle (`sps_products` only has spark-*vetoed* MPVs), so ask for the `spark_qa_<det>.csv` files.
+   - Result: the usable voltage window per gas. The gain gained by any option must fit in it.
+5. **Drift voltage.** It hardly changes the avalanche itself, but it changes:
+   - what reaches it: the mesh transparency, §1 here
+   - timing, through v_d and diffusion
+
+   So drift scans are the handle for understanding timing.
+6. **Drift gap → more primaries, but (hypothesis) not a higher spark probability.** Sparks are set
+   by the amplification field and the charge in a single avalanche, not by the gap length. But a
+   larger gap does put more total charge per track into the amplification gap. **Check this
+   against data** (spark rate vs drift setting at fixed mesh voltage: `26_hv_spark_qa` on the SPS
+   drift scans) before relying on it.
+7. **Gas in the drift gap.** The composition sets:
+   - the number of primaries
+   - v_d and diffusion, hence timing
+   - the electron temperature, hence transparency (`results/mesh/`)
+   - through the quencher fraction, the gain and stability (more isobutane: higher stable gain,
+     cooler electrons)
+
+   The rnd2026 options (iso 5 → 10 %, Ne/iso) change all of these at once, so report each effect
+   separately.
+8. **IMPORTANT: simulation answers the drift-gap question, but is much weaker for the
+   amplification gap.** The gain depends exponentially on the gap and field, the Penning
+   transfer r is only known from a fit to data, and the simulated gain slope does not match
+   the data (e-folding 31–35 V simulated vs 22–28 V measured, §1). The chamber's real gap is also
+   non-uniform (gain spread ×4). So treat amplification-gap and gain predictions as
+   **relative, calibrated to data**, never as absolute numbers. Drift-side predictions
+   (primaries, transparency vs field, timing at validated fields) are on much firmer ground.
+
 ## 1. The transparency edge (main open problem)
 
 Simulated mesh transparency starts to fall **~150–200 V/cm too early** compared with data:

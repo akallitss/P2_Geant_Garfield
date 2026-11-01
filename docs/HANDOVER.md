@@ -15,6 +15,12 @@ The gain varies by about ×4 across the chamber, so low-gain pads fall under the
 4 → 5 mm, or Ne/iso), while keeping **time resolution ≲ 20 ns** and, if possible, e/γ
 separation. The VMM threshold itself is being lowered separately in lab tests.
 
+The end question: **how do drift gap and gas change efficiency and timing resolution, and
+which of the two matters more for track reconstruction, in numbers?** The simulation is
+reliable on the drift side (primaries, transparency, timing) and much weaker on the
+amplification-gap side (gain), which must be calibrated to data. The full set of questions,
+and what can answer each, is in `OPEN_PROBLEMS.md` §0.
+
 Particles:
 - signal: 100 MeV electrons
 - background: 40–100 keV photons, from Matthieu Gailliard's background simulation
