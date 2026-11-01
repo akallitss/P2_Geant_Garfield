@@ -13,6 +13,8 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=2000
+# 2 GB is enough for Geant4. Garfield transparency/gain jobs peak at ~3 GB
+# (the COMSOL field map): submit those with --mem-per-cpu=4000.
 set -eo pipefail
 cmdfile="$1"
 line=$(sed -n "${SLURM_ARRAY_TASK_ID}p" "$cmdfile")

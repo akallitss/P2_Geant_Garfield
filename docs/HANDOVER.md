@@ -39,7 +39,9 @@ understanding (§4).
 Mesh transparency at the SPS point (mesh −450 V, drift 625 V/cm, measured mesh 18 µm wire /
 50 µm opening): Ar/iso 95/5 **94.3 %**, Ar/iso 90/10 99.2 %, Ne/iso 95/5 93.8 %,
 Ne/iso 85/15 99.9 %, Ar/CO2/iso 93/5/2 97.5 %, Ar/CF4/iso 88/10/2 95.5 %
-(`results/mesh/README.md`). The losses are electrons diffusing onto the wires, so mixtures with
+(`results/mesh/README.md`). These are single runs of a few thousand electrons, so each is
+±0.4 % or worse. A 20 000-electron rerun of Ar/iso 95/5 gives 93.4 ± 0.2 % (`OPEN_PROBLEMS.md` §2,
+item 7). The losses are electrons diffusing onto the wires, so mixtures with
 "hotter" electrons lose more.
 
 Production Geant4 physics is `--physics heed` (Heed for the gas, no PIXE). Older samples

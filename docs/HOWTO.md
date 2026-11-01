@@ -6,7 +6,7 @@ assumes you have run `source scripts/setup_feynman.sh` (Feynman) or `conda activ
 source scripts/setup_local.sh` (laptop) in the current shell.
 
 **Rule of thumb:** anything heavier than one Geant4 or Garfield process goes to SLURM on
-Feynman, not to a laptop. Each Garfield transparency/gain process loads a ~0.8 GB field map.
+Feynman, not to a laptop. Each Garfield transparency/gain process needs ~3 GB of memory (measured peak, 2026-11-01): five at once crashed a 14 GB laptop.
 
 ---
 
@@ -91,10 +91,11 @@ for E in 150 300 450 625 900 1250 1800 2500; do
   echo "source $P2_REPO/scripts/setup_feynman.sh && bash $P2_REPO/scripts/garfield/run_transparency.sh transp \
 $P2_DATA/comsol/p2_sps/h2mm_sweep_gap150/E$E $P2_DATA/gas_tables/ArIso.gas $P2_DATA/transp/E${E}_ArIso 5000 1 null" >> $J/cmds.txt
 done
-sbatch --array=1-$(wc -l < $J/cmds.txt) -p htc -o "$J/logs/%A_%a.out" scripts/slurm_array.sh $J/cmds.txt
+sbatch --array=1-$(wc -l < $J/cmds.txt) -p htc --mem-per-cpu=4000 -o "$J/logs/%A_%a.out" scripts/slurm_array.sh $J/cmds.txt
 ```
-For more memory per job, use `--mem-per-cpu=4000` (not `--mem`, which clashes with the script's
-own setting).
+Garfield jobs need `--mem-per-cpu=4000` (they peak at ~3 GB). Use that flag, not `--mem`, which
+clashes with the script's own setting. One 1000-electron run has ±0.008 statistical error:
+use ≥ 5000 electrons, or several seeds, per point.
 
 **Collect the results into a table:**
 ```bash
@@ -124,7 +125,7 @@ run it as a SLURM job:
 ```bash
 echo "source $P2_REPO/scripts/setup_feynman.sh && cd $P2_REPO && root -l -b -q \
 'scripts/garfield/make_gas_table.C(\"ArIso9010\", \"$P2_DATA/gas_tables_new/ArIso9010\", 10)'" > cmds.txt
-sbatch --array=1-1 -p htc -o "gas_%A_%a.out" scripts/slurm_array.sh cmds.txt
+sbatch --array=1-1 -p htc --mem-per-cpu=4000 -o "gas_%A_%a.out" scripts/slurm_array.sh cmds.txt
 ```
 Then export all tables to the JSON Stage B reads:
 ```bash
@@ -211,5 +212,5 @@ deliverable (`OPEN_PROBLEMS.md` §2, item 5). Read `stage_b/README.md` and `vmm/
 | `Disk quota exceeded` on Feynman | you are writing to home. Set `P2_WORK`/`P2_DATA` to your work area |
 | `sbatch: --mem, --mem-per-cpu … mutually exclusive` | use `--mem-per-cpu=…` |
 | SLURM job failed | `logs/slurm_<id>_<task>.out` and `logs/<tag>.out`. The command line is printed at the top |
-| laptop freezes or reboots | too many Garfield processes at once (each loads a ~0.8 GB field map). Use SLURM |
+| laptop freezes or reboots | too many Garfield processes at once (each needs ~3 GB). Use SLURM |
 | `check_local_vs_reference.py` says `DIFFERENT` | read which RunMeta field differs. A different `geometryHash` means the geometry code changed since the reference, so the comparison is not like-for-like |

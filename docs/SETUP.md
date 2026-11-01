@@ -103,12 +103,13 @@ bash scripts/garfield/run_transparency.sh transp \
     $P2_DATA/gas_tables/ArIso.gas $P2_DATA/check/E625_ArIso 1000 1 null
 ```
 
-(On Feynman you can run these checks on the login node: each takes about a minute.)
+(On Feynman, run the Geant4 check with `--slurm` instead of `--local 1`, and the Garfield check as a
+SLURM job with `--mem-per-cpu=4000` (`HOWTO.md` §3). It needs ~3 GB and takes about a minute.)
 
-| check | reference (lxplus) | laptop (2026-11-01) | Feynman (2026-11-01) |
+| check | reference (lxplus) | laptop (2026-11-01) | Feynman (2026-11-01, SLURM) |
 |---|---|---|---|
-| Geant4 + Heed, 10k e⁻ | `rnd2026_heed` file | same geometry and physics; P(n<10) 1.96 vs 1.89 %, KS p = 0.13 | _TBD_ |
-| transparency, n = 1000 | 0.943 | 0.944 ± 0.007 | _TBD_ |
+| Geant4 + Heed, 10k e⁻ | `rnd2026_heed` file | same geometry and physics; P(n<10) 1.96 vs 1.89 %, KS p = 0.13 | same geometry and physics; P(n<10) 1.97 vs 1.89 %, KS p = 0.49 |
+| transparency, Ar/iso 625 V/cm | 0.943 published (3000 e⁻); **0.934 ± 0.002** rerun with 20 seeds × 1000 | 0.944 ± 0.007 (1000 e⁻) | **0.9345 ± 0.0017** (20 seeds × 1000); same seeds on lxplus differ by −0.0005, p = 0.88 |
 
 ## 5. Pitfalls when running and reading outputs
 
@@ -150,3 +151,7 @@ bash scripts/garfield/run_transparency.sh transp \
 `submit_condor_p2.py` (no `--slurm`/`--local`), and the Garfield `.sub`/`.dag` files in
 `scripts/garfield/` and `scripts/comsol/` are the batch recipes. The old lxplus notes are in
 `archive/RUNBOOK.md`.
+
+A single 1000-electron transparency run has a statistical error of ±0.008, so expect
+0.92–0.95 for the Garfield check; for anything finer, run several seeds. The published
+0.943 was itself a 2σ-high single run (`OPEN_PROBLEMS.md` §2, item 7).

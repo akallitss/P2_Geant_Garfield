@@ -62,6 +62,11 @@ e-folding is 31–35 V at every gap, but the data give 22–28 V. Absolute gain 
      but the measured mesh is 50/68 µm.
    - W values: ours vs Garfield's (iso 26.0 vs 23.4 eV).
    - Report the interface-crossing bug upstream to Garfield++ with our patch.
+   - **Transparency statistics.** Ar/iso 95/5 at 625 V/cm reruns at **0.934 ± 0.002**
+     (20 seeds × 1000 electrons; the lxplus build and the Feynman build agree to 0.0004,
+     2026-11-01). The published 0.943 (`results/mesh/`) was a single 3000-electron run, 2σ high.
+     The other entries in the table are single runs too. Rerun the final table with ≥ 20 000
+     electrons per point before quoting it to 0.1 %.
 
 ## 3. Validation plan (agreed 2026-10-15, one stage at a time)
 
