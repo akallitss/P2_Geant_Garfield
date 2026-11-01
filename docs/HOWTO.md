@@ -23,8 +23,9 @@ Do these once, in this order. Nobody else's account or files are needed afterwar
    to GitHub → Settings → SSH keys). Clone with the SSH URL so you can push:
    `git clone git@github.com:akallitss/P2_Geant_Garfield.git`.
 3. **Install:** `SETUP.md` §1 (Feynman) or §2 (laptop).
-4. **Data:** download the bundle from the CERNBox link into `$P2_DATA` (`SETUP.md` §3),
-   including `sps_products.tar`.
+4. **Data:** on Feynman it is already in `/feynman/work/projets/idedipdetecs/p2_data`, and
+   `setup_feynman.sh` points `$P2_DATA` there (read-only, shared). Your own outputs go to
+   `$P2_OUT` (`SETUP.md` §3).
 5. **Check:** run every check in `SETUP.md` §4. Do this again whenever you rebuild or move
    to a new machine.
 6. **Optional:** with Claude Code, start it in the repo. It reads `CLAUDE.md` automatically,
@@ -35,7 +36,7 @@ Do these once, in this order. Nobody else's account or files are needed afterwar
 **One point, interactively** (seconds to minutes):
 ```bash
 ./build/mm_sim -m p2 -g ArIso -p electron -e 100 -n 1000 -t 1 \
-    --heed --no-pixe --pai config --beam-spread 11.43 -o $P2_DATA/test/e100
+    --heed --no-pixe --pai config --beam-spread 11.43 -o $P2_OUT/test/e100
 ./build/mm_sim --list-gases     # available mixtures
 ./build/mm_sim -h               # all options
 ```
@@ -44,7 +45,7 @@ Do these once, in this order. Nobody else's account or files are needed afterwar
 ```bash
 python3 scripts/submit_condor_p2.py --scan rnd2026 --slurm --dry-run      # list the jobs
 python3 scripts/submit_condor_p2.py --scan rnd2026 --slurm \
-    --outdir $P2_DATA/rnd2026_v2 --jobdir $P2_WORK/jobs/rnd2026_v2
+    --outdir $P2_OUT/rnd2026_v2 --jobdir $P2_WORK/jobs/rnd2026_v2
 squeue -u $USER                                                            # watch
 ```
 `--only <part of a tag>` selects jobs and `--scale 0.1` shrinks them, which is good for tests.
@@ -53,7 +54,7 @@ To add points or a new scan, edit the lists at the top of `scripts/submit_condor
 
 **Check:** every job log `logs/<tag>.out` ends with `Job done`. Then:
 ```bash
-python3 scripts/collect_results.py --indir $P2_DATA/rnd2026_v2    # merges, summary.csv, warnings
+python3 scripts/collect_results.py --indir $P2_OUT/rnd2026_v2    # merges, summary.csv, warnings
 ```
 
 ## 2. Read a Geant4 output file
@@ -78,7 +79,7 @@ To compare two files of the same point (e.g. after a code change):
 ```bash
 bash scripts/garfield/run_transparency.sh transp \
     $P2_DATA/comsol/p2_sps/h2mm_sweep_gap150/E625 $P2_DATA/gas_tables/ArIso.gas \
-    $P2_DATA/transp/E625_ArIso 5000 1 null
+    $P2_OUT/transp/E625_ArIso 5000 1 null
 ```
 Arguments are `<mode> <cell dir> <gas table> <output prefix> <n electrons> <seed> <flags>`.
 **Always pass `null`.** It prints one `TRANSPARENCY gas=… micro=T +- err … wire=… attached=…` line.
@@ -89,7 +90,7 @@ At 5000 electrons it takes ~5 min.
 J=$P2_WORK/jobs/sweep_ArIso; mkdir -p $J/logs; : > $J/cmds.txt
 for E in 150 300 450 625 900 1250 1800 2500; do
   echo "source $P2_REPO/scripts/setup_feynman.sh && bash $P2_REPO/scripts/garfield/run_transparency.sh transp \
-$P2_DATA/comsol/p2_sps/h2mm_sweep_gap150/E$E $P2_DATA/gas_tables/ArIso.gas $P2_DATA/transp/E${E}_ArIso 5000 1 null" >> $J/cmds.txt
+$P2_DATA/comsol/p2_sps/h2mm_sweep_gap150/E$E $P2_DATA/gas_tables/ArIso.gas $P2_OUT/transp/E${E}_ArIso 5000 1 null" >> $J/cmds.txt
 done
 sbatch --array=1-$(wc -l < $J/cmds.txt) -p htc --mem-per-cpu=4000 -o "$J/logs/%A_%a.out" scripts/slurm_array.sh $J/cmds.txt
 ```
@@ -111,7 +112,7 @@ combine them. The same seed on two different builds does *not* give the same ele
 
 ```bash
 bash scripts/garfield/run_gain.sh $P2_DATA/comsol/p2_sps/h2mm_sweep_gap150/E625 \
-    $P2_DATA/gas_tables/ArCO2Iso9352.gas $P2_DATA/gain/E625 0,0.2,0.36,0.5 20
+    $P2_DATA/gas_tables/ArCO2Iso9352.gas $P2_OUT/gain/E625 0,0.2,0.36,0.5 20
 python3 scripts/garfield/collect_lines.py GAIN <logs> -o gain.csv
 ```
 Arguments: `<cell> <gas table> <out> <Penning r values> <n×n start grid>`. The fitted r is ≈ 0.36
@@ -124,7 +125,7 @@ Needed for a new mixture, or a new contamination level. It takes 1–2 h per gas
 run it as a SLURM job:
 ```bash
 echo "source $P2_REPO/scripts/setup_feynman.sh && cd $P2_REPO && root -l -b -q \
-'scripts/garfield/make_gas_table.C(\"ArIso9010\", \"$P2_DATA/gas_tables_new/ArIso9010\", 10)'" > cmds.txt
+'scripts/garfield/make_gas_table.C(\"ArIso9010\", \"$P2_OUT/gas_tables_new/ArIso9010\", 10)'" > cmds.txt
 sbatch --array=1-1 -p htc --mem-per-cpu=4000 -o "gas_%A_%a.out" scripts/slurm_array.sh cmds.txt
 ```
 Then export all tables to the JSON Stage B reads:
@@ -164,7 +165,7 @@ A **new mesh or gap geometry for Garfield** needs a new COMSOL field map (`SETUP
 
 ```bash
 python3 -m stage_b.run $P2_DATA/rnd2026_heed/p2_ArIso_3p964mm_electron100MeV_th0_t0.root \
-    -o $P2_DATA/stageb/e100_ArIso.root --gain 1e4 --mesh-transparency 0.943 --drift-field 625
+    -o $P2_OUT/stageb/e100_ArIso.root --gain 1e4 --mesh-transparency 0.943 --drift-field 625
 python3 -m stage_b.selftest
 ```
 Options: `python3 -m stage_b.run -h`. Every run writes a `StageBMeta` tree with all its

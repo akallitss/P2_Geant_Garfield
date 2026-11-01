@@ -19,6 +19,7 @@ _p2_here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export P2_REPO="$_p2_here"
 export P2_SETUP="$_p2_here/scripts/setup_local.sh"     # sourced by local job wrappers
 export P2_DATA="${P2_DATA:-$HOME/p2_data}"
+export P2_OUT="${P2_OUT:-$HOME/p2_out}"     # your outputs (kept apart from the data bundle)
 
 _p2_ok=1
 for _t in geant4-config root-config cmake; do

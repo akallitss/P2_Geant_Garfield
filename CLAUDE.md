@@ -61,7 +61,8 @@ people and to AI assistants working in this repo.
 - Production runs come from a clean git checkout, so that RunMeta records the commit.
 - Compiled Garfield programs only; ROOT 6.38 cling cannot JIT them.
 - Don't edit or pull sources that queued HTCondor jobs recompile from.
-- Large outputs go under `$P2_DATA` (EOS on lxplus), never in git. Results that back a claim get copied into `docs/results/<topic>/`
+- `$P2_DATA` is shared, read-only reference data. Your outputs go under `$P2_OUT` (on lxplus, EOS),
+  never in git and never into `$P2_DATA`. Results that back a claim get copied into `docs/results/<topic>/`
   with a README saying what produced them (script, commit, cluster id).
 - Add a dated entry to the logbook (`docs/logbook/project/`) for each completed step.
 - Slides: white background, black text, Arial, title + bullets, at most one figure.

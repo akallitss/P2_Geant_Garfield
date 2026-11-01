@@ -58,14 +58,22 @@ and `--scale 0.1` pick and shrink jobs. The whole 106-job `rnd2026` batch is ~20
 
 ## 3. Data
 
-The EOS data comes as tarballs on a CERNBox link from Alexandra (made with
-`scripts/make_data_bundle.sh`). Extract them all into `$P2_DATA`. On Feynman the default is
-`$P2_WORK/data`; on a laptop it is `~/p2_data`.
+**On Feynman the data is already there**, unpacked and checksum-verified (2026-11-01), readable by
+the `idedipdetecs` group:
 
 ```bash
-for f in *.tar; do tar -xf $f -C $P2_DATA; done
-sha256sum -c SHA256SUMS
+export P2_DATA=/feynman/work/projets/idedipdetecs/p2_data    # put it in ~/.bashrc, before setup_feynman.sh
+ls $P2_DATA/_bundle      # MANIFEST.txt and SHA256SUMS of what was transferred
 ```
+
+Treat it as **read-only reference data**: it is shared with the group. Write your own outputs to
+your work area (e.g. `--outdir $P2_WORK/out/...`), not into `$P2_DATA`. If you can't read it, ask to
+be added to the `idedipdetecs` group.
+
+**On a laptop**, copy what you need from Feynman (`rsync -a feynman:$P2_DATA/<dir> ~/p2_data/`).
+The bundle was made on lxplus with `scripts/make_data_bundle.sh` (EOS data, plus
+`sps_products.tar` from `scripts/make_sps_products_bundle.py`). Extract tarballs with
+`for f in *.tar; do tar -xf $f -C $P2_DATA; done` after `sha256sum -c SHA256SUMS`.
 
 `$P2_DATA` has the layout of `/eos/user/a/akallits/p2_sim`, so any `/eos/user/a/akallits/p2_sim/X`
 in the docs is `$P2_DATA/X`.
@@ -92,15 +100,15 @@ python3 vmm/vmm_emulator.py                       # smoke test OK
 # Geant4 + Heed: rerun one production point, compare with the lxplus file
 python3 scripts/submit_condor_p2.py --scan rnd2026 --local 1 \
     --only ArIso_3p964mm_electron100MeV_th0 \
-    --outdir $P2_DATA/check --jobdir $P2_DATA/check_jobs
+    --outdir $P2_OUT/check --jobdir $P2_OUT/check_jobs
 python3 scripts/check_local_vs_reference.py \
-    $P2_DATA/check/p2_ArIso_3p964mm_electron100MeV_th0_t0.root \
+    $P2_OUT/check/p2_ArIso_3p964mm_electron100MeV_th0_t0.root \
     $P2_DATA/rnd2026_heed/p2_ArIso_3p964mm_electron100MeV_th0_t0.root   # -> "same physics"
 
 # Garfield: Ar/iso 95/5 at 625 V/cm, published 0.943
 bash scripts/garfield/run_transparency.sh transp \
     $P2_DATA/comsol/p2_sps/h2mm_sweep_gap150/E625 \
-    $P2_DATA/gas_tables/ArIso.gas $P2_DATA/check/E625_ArIso 1000 1 null
+    $P2_DATA/gas_tables/ArIso.gas $P2_OUT/check/E625_ArIso 1000 1 null
 ```
 
 (On Feynman, run the Geant4 check with `--slurm` instead of `--local 1`, and the Garfield check as a
