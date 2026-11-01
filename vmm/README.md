@@ -259,10 +259,15 @@ To express the threshold as charge, there are two routes:
 They differ by about ×1.4 (different shaping, 200 vs 180 ns, and charge collection). Say which one
 you use, and calibrate the emulator so the July settings reproduce the measured efficiency.
 
-Not recorded anywhere found here: **neighbour logic (`sng`)**, **TAC slope / TDO mode**, and the
-**noise (ENC) on the real pads**. The vmmsc pedestal/noise calibration on the P2 hybrids is still
-to be done (threshold handoff §5.0). Get these from the base YAML on the DAQ machine and the planned
-cosmic calibration.
+| neighbour logic | **off** at SPS (Alexandra, 2026-11-01), as assumed in the emulator baseline (§3.1) |
+
+**Unknown (2026-11-01):**
+- **TAC slope / TDO mode:** no record. They may be in the base YAML on the DAQ machine; otherwise
+  assume nothing about absolute TDO timing.
+- **Noise (ENC) on the real pads:** never measured. **It has to be measured** (vmmsc pedestal and
+  noise calibration on the P2 hybrids with the chambers connected, threshold handoff §5.0). Until
+  then `enc_electrons` is a placeholder. Quote results for a range of ENC values, as
+  `vmm/time_resolution.py` does (0–6000 e⁻).
 
 ## 7. Open items (NEEDS-DATA — ask BASKET/Saclay; none block coding)
 
@@ -270,7 +275,7 @@ cosmic calibration.
    working point does the BASKET prototype run? (They quote 21 fC expected
    signal and 62 fC threshold-ish floor — clarify what "62 fC–2 pC" is:
    dynamic range at which gain?)
-2. **Measured noise** (pedestal σ in DAC counts / equivalent fC) on real
+2. **Measured noise** *(still unmeasured 2026-11-01: needs a dedicated measurement, see §6b)* (pedestal σ in DAC counts / equivalent fC) on real
    pads at 75–170 pF — replaces the `enc_electrons` placeholder. Published
    VMM data doesn't cover this capacitance.
 3. **PDO calibration** (counts ↔ mV ↔ fC) and effective ADC range for
@@ -287,7 +292,7 @@ cosmic calibration.
    *channel-assignment* question, not a geometry question.
    Sub-question, now closed: whether NL crosses the 64-channel chip boundary
    changes 0.8 % of pairs — **does not matter**.
-5. **Will NL be enabled at all?** Working assumption (Dylan, 2026-08-06): no.
+5. ✅ *(SPS July 2026: off, Alexandra 2026-11-01)* **Will NL be enabled at all?** Working assumption (Dylan, 2026-08-06): no.
    Confirm with BASKET, and if the answer is "we could", the Phase-2 scan
    should quote what it buys (bounded at ~3–4 % of tracks gaining a partial
    second pad) against ~3× the channel occupancy.
